@@ -1,0 +1,523 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SkillCard from '../components/SkillCard.astro';
+import CategoryCard from '../components/CategoryCard.astro';
+import SearchBar from '../components/SearchBar.astro';
+
+// Import aggregated skills data
+import skillsData from '../data/skills.json';
+
+// Category metadata
+const categoryMeta: Record<string, { name: string; icon: string; description: string }> = {
+  'git-version-control': { name: 'Git & Version Control', icon: '🔀', description: 'Git operations, branching, and version control' },
+  'code-quality': { name: 'Code Quality', icon: '✨', description: 'Code quality, refactoring, and best practices' },
+  'documentation': { name: 'Documentation', icon: '📝', description: 'Documentation and knowledge management' },
+  'diagrams': { name: 'Diagrams', icon: '📊', description: 'Diagrams, flowcharts, and visualizations' },
+  'testing': { name: 'Testing', icon: '🧪', description: 'Testing and test automation' },
+  'api-backend': { name: 'API & Backend', icon: '🔌', description: 'API development and backend services' },
+  'frontend-ui': { name: 'Frontend & UI', icon: '🎨', description: 'Frontend development and UI components' },
+  'devops-cicd': { name: 'DevOps & CI/CD', icon: '🚀', description: 'Deployment, pipelines, and DevOps workflows' },
+  'security': { name: 'Security', icon: '🔒', description: 'Security analysis and best practices' },
+  'data-analytics': { name: 'Data & Analytics', icon: '📈', description: 'Data processing and analytics' },
+  'office-documents': { name: 'Office Documents', icon: '📄', description: 'Office documents and formats' },
+  'mcp-development': { name: 'MCP Development', icon: '🔧', description: 'Model Context Protocol development' },
+  'observability': { name: 'Observability', icon: '📊', description: 'Monitoring, dashboards, and metrics' },
+  'troubleshooting': { name: 'Troubleshooting', icon: '🔍', description: 'Debugging and log analysis' },
+  'general': { name: 'General', icon: '📦', description: 'General-purpose development skills' },
+};
+
+const featuredSkills = skillsData.skills.slice(0, 6);
+
+// Build categories with counts from skills
+const categoryCounts = skillsData.skills.reduce((acc, skill) => {
+  const cat = skill.category || 'general';
+  acc[cat] = (acc[cat] || 0) + 1;
+  return acc;
+}, {} as Record<string, number>);
+
+const categories = Object.entries(categoryCounts).map(([id, count]) => ({
+  id,
+  name: categoryMeta[id]?.name || id,
+  description: categoryMeta[id]?.description || '',
+  icon: categoryMeta[id]?.icon || '📦',
+  count
+}));
+---
+
+<Layout title="Home">
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-bg">
+      <div class="hero-glow hero-glow-1"></div>
+      <div class="hero-glow hero-glow-2"></div>
+    </div>
+    <div class="container hero-content">
+      <h1 class="hero-title">
+        <span class="title-line">Skills <span class="title-accent">Hub</span></span>
+      </h1>
+      <p class="hero-subtitle">
+        Discover and install curated AI coding skills<br class="hide-mobile" />
+        to <span class="highlight">supercharge</span> your development workflow.
+      </p>
+      <div class="hero-search">
+        <SearchBar placeholder="Search for skills..." />
+      </div>
+      <div class="hero-stats">
+        <div class="stat-card">
+          <span class="stat-value">{skillsData.skills.length}</span>
+          <span class="stat-label">Skills</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-card">
+          <span class="stat-value">{categories.length}</span>
+          <span class="stat-label">Categories</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-card">
+          <span class="stat-value">1</span>
+          <span class="stat-label">Source</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Skills -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Featured Skills</h2>
+        <a href={`${import.meta.env.BASE_URL}skills/`} class="btn btn-secondary btn-sm">View All →</a>
+      </div>
+      <div class="grid grid-3">
+        {featuredSkills.map(skill => (
+          <SkillCard 
+            id={skill.id}
+            name={skill.name}
+            description={skill.description}
+            category={skill.category}
+            complexity={skill.complexity}
+            fileCount={skill.files?.length || 0}
+            source={skill.source}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Browse by Category</h2>
+        <a href={`${import.meta.env.BASE_URL}categories/`} class="btn btn-secondary btn-sm">All Categories →</a>
+      </div>
+      <div class="grid grid-3">
+        {categories.slice(0, 9).map(category => (
+          <CategoryCard 
+            id={category.id}
+            name={category.name}
+            description={category.description}
+            icon={category.icon}
+            count={category.count}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- How to Install -->
+  <section class="section install-section">
+    <div class="container">
+      <h2 class="section-title text-center">How to Use</h2>
+      <p class="section-subtitle text-center">Skills live in this repo and work with any AI coding tool.</p>
+
+      <div class="install-steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3>Configure GitHub Packages access</h3>
+          <p class="step-desc">Add these lines to your <code>~/.npmrc</code> (one-time setup):</p>
+          <pre><code>@vector-labs:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN</code></pre>
+          <p class="step-desc">Use a <a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer">Personal Access Token</a> with <code>read:packages</code> scope. Or run <code>gh auth token</code> if you use GitHub CLI.</p>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3>Browse & pick a skill</h3>
+          <pre><code>npx @vector-labs/skills list</code></pre>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3>Install into your project</h3>
+          <pre><code>npx @vector-labs/skills add generate-dashboard</code></pre>
+          <p class="step-desc">Auto-detects your AI tool (Claude Code, Cursor, Copilot, Gemini) and installs to the right path.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Curated Catalog -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title text-center">Curated Catalog</h2>
+      <p class="section-subtitle text-center">Every skill is reviewed before it reaches your codebase.</p>
+
+      <div class="curation-grid">
+        <div class="curation-card">
+          <div class="curation-icon">&#x2714;&#xFE0F;</div>
+          <h3>Reviewed via Pull Request</h3>
+          <p>Every skill goes through human code review before being published to the catalog.</p>
+        </div>
+        <div class="curation-card">
+          <div class="curation-icon">&#x1F464;</div>
+          <h3>Identified Authorship</h3>
+          <p>Each skill declares its author in <code>metadata.author</code> — you always know who built it.</p>
+        </div>
+        <div class="curation-card">
+          <div class="curation-icon">&#x1F6E1;&#xFE0F;</div>
+          <h3>Open & Auditable</h3>
+          <p>Source code is public in this repository. Inspect any skill before installing it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .hero {
+    position: relative;
+    text-align: center;
+    padding: 5rem 0 4rem;
+    overflow: hidden;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, var(--color-bg-secondary) 0%, var(--color-bg) 100%);
+    z-index: 0;
+  }
+
+  .hero-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.4;
+    animation: pulse 8s ease-in-out infinite;
+  }
+
+  .hero-glow-1 {
+    width: 400px;
+    height: 400px;
+    background: var(--color-accent);
+    top: -150px;
+    left: 20%;
+    animation-delay: 0s;
+  }
+
+  .hero-glow-2 {
+    width: 300px;
+    height: 300px;
+    background: #a855f7;
+    bottom: -100px;
+    right: 20%;
+    animation-delay: 4s;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.3;
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.5;
+    }
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-title {
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+    animation: fadeInUp 0.6s ease-out 0.1s both;
+  }
+
+  .title-line {
+    color: var(--color-text);
+  }
+
+  .title-accent {
+    background: linear-gradient(135deg, var(--color-accent) 0%, #a855f7 50%, var(--color-accent) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s linear infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 0% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .hero-subtitle {
+    font-size: 1.25rem;
+    color: var(--color-text-secondary);
+    max-width: 600px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.6;
+    animation: fadeInUp 0.6s ease-out 0.2s both;
+  }
+
+  .hero-subtitle .highlight {
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+
+  .hide-mobile {
+    display: inline;
+  }
+
+  .hero-search {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+    animation: fadeInUp 0.6s ease-out 0.3s both;
+  }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    animation: fadeInUp 0.6s ease-out 0.4s both;
+  }
+
+  .stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 2.5rem;
+    background: linear-gradient(180deg, transparent, var(--color-border), transparent);
+  }
+
+  .section {
+    padding: 3rem 0;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+
+  .install-section {
+    background-color: var(--color-bg-secondary);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    margin-top: 2rem;
+  }
+
+  .install-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .step {
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+  }
+
+  .step-number {
+    width: 2rem;
+    height: 2rem;
+    background-color: var(--color-accent);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .step h3 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .step pre {
+    font-size: 0.75rem;
+    margin: 0;
+  }
+
+  .step-desc {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin: 0.625rem 0 0;
+  }
+
+  .step pre + .step-desc {
+    margin-top: 0.75rem;
+    padding-top: 0.625rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .step-desc + pre {
+    margin-top: 0.625rem;
+  }
+
+  .step code:not(pre code) {
+    background-color: var(--color-bg-tertiary);
+    padding: 0.1rem 0.35rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.6875rem;
+  }
+
+  .step a {
+    color: var(--color-accent);
+  }
+
+  @media (max-width: 768px) {
+    .hero {
+      padding: 3rem 0 2.5rem;
+    }
+
+    .hero-title {
+      font-size: 2.5rem;
+    }
+
+    .hero-subtitle {
+      font-size: 1rem;
+    }
+
+    .hide-mobile {
+      display: none;
+    }
+
+    .hero-stats {
+      gap: 1rem;
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+    }
+
+    .stat-divider {
+      height: 2rem;
+    }
+
+    .install-steps {
+      grid-template-columns: 1fr;
+    }
+
+    .curation-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .curation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .curation-card {
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .curation-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .curation-card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .curation-card p {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .curation-card code {
+    background-color: var(--color-bg-tertiary);
+    padding: 0.1rem 0.35rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-glow {
+      animation: none;
+    }
+
+    .hero-title,
+    .hero-subtitle,
+    .hero-search,
+    .hero-stats {
+      animation: none;
+    }
+
+    .title-accent {
+      animation: none;
+    }
+  }
+</style>

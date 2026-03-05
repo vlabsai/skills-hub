@@ -1,0 +1,201 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SkillCard from '../../components/SkillCard.astro';
+import SearchBar from '../../components/SearchBar.astro';
+
+import skillsData from '../../data/skills.json';
+
+// Define category metadata (icons and names)
+const categoryMeta = {
+  'git-version-control': { name: 'Git & Version Control', icon: '🔀' },
+  'code-quality': { name: 'Code Quality & Refactoring', icon: '✨' },
+  'documentation': { name: 'Documentation', icon: '📝' },
+  'diagrams': { name: 'Diagrams & Visualization', icon: '📊' },
+  'testing': { name: 'Testing', icon: '🧪' },
+  'api-backend': { name: 'API & Backend', icon: '🔌' },
+  'frontend-ui': { name: 'Frontend & UI', icon: '🎨' },
+  'devops-cicd': { name: 'DevOps & CI/CD', icon: '🚀' },
+  'security': { name: 'Security', icon: '🔒' },
+  'data-analytics': { name: 'Data & Analytics', icon: '📈' },
+  'office-documents': { name: 'Office Documents', icon: '📄' },
+  'mcp-development': { name: 'MCP Development', icon: '🔧' },
+  'observability': { name: 'Observability', icon: '📊' },
+  'troubleshooting': { name: 'Troubleshooting', icon: '🔍' },
+  'general': { name: 'General', icon: '📦' }
+};
+
+const skills = skillsData.skills;
+
+// Get unique categories from skills
+const categoryIds = [...new Set(skills.map(s => s.category || 'general'))].sort();
+const categories = categoryIds.map(id => ({
+  id,
+  name: categoryMeta[id]?.name || id,
+  icon: categoryMeta[id]?.icon || '📁'
+}));
+---
+
+<Layout title="All Skills" description="Browse all available AI coding skills">
+  <section class="page-header">
+    <div class="container">
+      <h1>Browse Skills</h1>
+      <p class="text-secondary">Discover {skills.length} curated AI coding skills</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="filter-bar">
+        <SearchBar placeholder="Filter skills..." id="skill-filter" />
+        <div class="filter-options">
+          <select id="category-filter" class="filter-select">
+            <option value="">All Categories</option>
+            {categories.map(cat => (
+              <option value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div class="skills-grid grid grid-3" id="skills-list">
+        {skills.map(skill => (
+          <div class="skill-item" 
+               data-name={skill.name.toLowerCase()} 
+               data-description={skill.description.toLowerCase()}
+               data-category={skill.category || 'general'}
+               data-author={skill.author?.toLowerCase() || ''}>
+            <SkillCard 
+              id={skill.id}
+              name={skill.name}
+              description={skill.description}
+              category={skill.category || 'general'}
+              complexity={skill.complexity}
+              fileCount={skill.files?.length || 0}
+              source={skill.source}
+            />
+          </div>
+        ))}
+      </div>
+
+      <p class="no-results" id="no-results" style="display: none;">
+        No skills found matching your criteria.
+      </p>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .page-header {
+    padding: 4rem 0 2rem;
+    background-color: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .section {
+    padding-top: 2rem;
+  }
+
+  .filter-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-options {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .filter-select {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    cursor: pointer;
+    min-width: 150px;
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+
+  .skill-item {
+    transition: opacity 0.2s ease;
+  }
+
+  .skill-item.hidden {
+    display: none;
+  }
+
+  .no-results {
+    text-align: center;
+    color: var(--color-text-secondary);
+    padding: 3rem;
+  }
+
+  @media (max-width: 768px) {
+    .filter-bar {
+      flex-direction: column;
+    }
+
+    .filter-options {
+      flex-direction: column;
+    }
+
+    .filter-select {
+      width: 100%;
+    }
+  }
+</style>
+
+<script>
+  const searchInput = document.getElementById('skill-filter') as HTMLInputElement;
+  const categoryFilter = document.getElementById('category-filter') as HTMLSelectElement;
+  const skillItems = document.querySelectorAll('.skill-item');
+  const noResults = document.getElementById('no-results');
+
+  function filterSkills() {
+    const searchTerm = searchInput?.value.toLowerCase() || '';
+    const category = categoryFilter?.value || '';
+    
+    let visibleCount = 0;
+
+    skillItems.forEach((item) => {
+      const el = item as HTMLElement;
+      const name = el.dataset.name || '';
+      const description = el.dataset.description || '';
+      const author = el.dataset.author || '';
+      const itemCategory = el.dataset.category || '';
+
+      const matchesSearch = !searchTerm || 
+        name.includes(searchTerm) || 
+        description.includes(searchTerm) ||
+        author.includes(searchTerm);
+      
+      const matchesCategory = !category || itemCategory === category;
+
+      if (matchesSearch && matchesCategory) {
+        el.classList.remove('hidden');
+        visibleCount++;
+      } else {
+        el.classList.add('hidden');
+      }
+    });
+
+    if (noResults) {
+      noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+  }
+
+  searchInput?.addEventListener('input', filterSkills);
+  categoryFilter?.addEventListener('change', filterSkills);
+</script>

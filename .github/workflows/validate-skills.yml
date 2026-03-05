@@ -1,0 +1,213 @@
+name: Validate Skills
+
+on:
+  pull_request:
+    paths:
+      - 'skills/**'
+
+jobs:
+  validate-skills:
+    runs-on: ubuntu-latest
+    name: Validate SKILL.md files
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate SKILL.md files exist and have required frontmatter
+        run: |
+          set -euo pipefail
+
+          ERRORS=0
+          WARNINGS=0
+          VALIDATED=0
+
+          echo "=========================================="
+          echo "  Skills Validation (agentskills.io spec)"
+          echo "=========================================="
+          echo ""
+          echo "Spec: https://agentskills.io/specification"
+          echo "Guia: CONTRIBUTING.md"
+          echo ""
+
+          for skill_dir in skills/*/; do
+            skill_name=$(basename "$skill_dir")
+            skill_file="${skill_dir}SKILL.md"
+
+            echo "--- Validating: $skill_name ---"
+
+            # SKILL.md must exist
+            if [ ! -f "$skill_file" ]; then
+              echo "ERROR: $skill_file does not exist"
+              ERRORS=$((ERRORS + 1))
+              echo ""
+              continue
+            fi
+
+            echo "OK: SKILL.md exists"
+
+            # Extract frontmatter (content between first --- and second ---)
+            frontmatter=$(awk '/^---$/{n++; next} n==1{print} n==2{exit}' "$skill_file")
+
+            if [ -z "$frontmatter" ]; then
+              echo "ERROR: $skill_file has no YAML frontmatter (must start with --- and end with ---)"
+              ERRORS=$((ERRORS + 1))
+              echo ""
+              continue
+            fi
+
+            # --- Required: name ---
+            if echo "$frontmatter" | grep -qE "^name:"; then
+              declared_name=$(echo "$frontmatter" | grep -E "^name:" | head -1 | sed 's/^name:\s*//')
+              if [ -z "$declared_name" ]; then
+                echo "ERROR: 'name' field is empty"
+                ERRORS=$((ERRORS + 1))
+              else
+                echo "OK: 'name' is present ($declared_name)"
+
+                # name must match directory name (spec requirement)
+                if [ "$declared_name" != "$skill_name" ]; then
+                  echo "ERROR: name '$declared_name' does not match directory name '$skill_name'"
+                  ERRORS=$((ERRORS + 1))
+                fi
+
+                # name format: lowercase alphanumeric + hyphens, max 64, no leading/trailing -, no --
+                if [ ${#declared_name} -gt 64 ]; then
+                  echo "ERROR: name exceeds 64 characters (${#declared_name})"
+                  ERRORS=$((ERRORS + 1))
+                fi
+                if echo "$declared_name" | grep -qE '(^-|-$)'; then
+                  echo "ERROR: name must not start or end with a hyphen"
+                  ERRORS=$((ERRORS + 1))
+                fi
+                if echo "$declared_name" | grep -qE '\-\-'; then
+                  echo "ERROR: name must not contain consecutive hyphens (--)"
+                  ERRORS=$((ERRORS + 1))
+                fi
+                if ! echo "$declared_name" | grep -qE '^[a-z0-9-]+$'; then
+                  echo "ERROR: name must contain only lowercase letters, numbers, and hyphens"
+                  ERRORS=$((ERRORS + 1))
+                fi
+              fi
+            else
+              echo "ERROR: missing required field 'name'"
+              ERRORS=$((ERRORS + 1))
+            fi
+
+            # --- Required: description ---
+            if echo "$frontmatter" | grep -qE "^description:"; then
+              desc_value=$(echo "$frontmatter" | grep -E "^description:" | head -1 | sed 's/^description:\s*//')
+              if [ -z "$desc_value" ]; then
+                echo "ERROR: 'description' field is empty"
+                ERRORS=$((ERRORS + 1))
+              else
+                desc_len=${#desc_value}
+                if [ "$desc_len" -gt 1024 ]; then
+                  echo "ERROR: description exceeds 1024 characters ($desc_len)"
+                  ERRORS=$((ERRORS + 1))
+                else
+                  echo "OK: 'description' is present ($desc_len chars)"
+                fi
+              fi
+            else
+              echo "ERROR: missing required field 'description'"
+              ERRORS=$((ERRORS + 1))
+            fi
+
+            # --- Recommended: license ---
+            if echo "$frontmatter" | grep -qE "^license:"; then
+              license_value=$(echo "$frontmatter" | grep -E "^license:" | head -1 | sed 's/^license:\s*//')
+              echo "OK: 'license' is present ($license_value)"
+              # Warn on uncommon SPDX identifiers
+              if [ -n "$license_value" ] && [ "$license_value" != "Apache-2.0" ] && [ "$license_value" != "MIT" ] && [ "$license_value" != "BSD-3-Clause" ]; then
+                echo "WARN: license '$license_value' - verify it is a valid SPDX identifier"
+                WARNINGS=$((WARNINGS + 1))
+              fi
+            else
+              echo "WARN: 'license' is recommended but missing"
+              WARNINGS=$((WARNINGS + 1))
+            fi
+
+            # --- Recommended: compatibility ---
+            if echo "$frontmatter" | grep -qE "^compatibility:"; then
+              compat_value=$(echo "$frontmatter" | grep -E "^compatibility:" | head -1 | sed 's/^compatibility:\s*//')
+              compat_len=${#compat_value}
+              if [ "$compat_len" -gt 500 ]; then
+                echo "ERROR: compatibility exceeds 500 characters ($compat_len)"
+                ERRORS=$((ERRORS + 1))
+              else
+                echo "OK: 'compatibility' is present"
+              fi
+            else
+              echo "WARN: 'compatibility' is recommended but missing"
+              WARNINGS=$((WARNINGS + 1))
+            fi
+
+            # --- Directory name format (redundant check if name matched, but catches cases where name field is missing) ---
+            if echo "$skill_name" | grep -qE '(^-|-$)'; then
+              echo "ERROR: directory name must not start or end with a hyphen"
+              ERRORS=$((ERRORS + 1))
+            fi
+            if echo "$skill_name" | grep -qE '\-\-'; then
+              echo "ERROR: directory name must not contain consecutive hyphens (--)"
+              ERRORS=$((ERRORS + 1))
+            fi
+
+            VALIDATED=$((VALIDATED + 1))
+            echo ""
+          done
+
+          if [ "$VALIDATED" -eq 0 ] && [ "$ERRORS" -eq 0 ]; then
+            echo "WARN: No skill directories found in skills/"
+            echo ""
+          fi
+
+          echo "=========================================="
+          echo "  Results"
+          echo "=========================================="
+          echo "Skills validated: $VALIDATED"
+          echo "Errors: $ERRORS"
+          echo "Warnings: $WARNINGS"
+          echo ""
+
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "FAILED: $ERRORS validation error(s) found"
+            echo ""
+            echo "=========================================="
+            echo "  Como corrigir"
+            echo "=========================================="
+            echo ""
+            echo "Cada skill precisa de um SKILL.md com frontmatter YAML valido."
+            echo ""
+            echo "Campos obrigatorios (agentskills.io spec):"
+            echo ""
+            echo "  ---"
+            echo "  name: my-skill-name"
+            echo "  description: O que a skill faz e quando usar."
+            echo "  ---"
+            echo ""
+            echo "Regras do name:"
+            echo "  - Lowercase, numeros e hyphens (a-z, 0-9, -)"
+            echo "  - Max 64 chars"
+            echo "  - Sem -- consecutivos, sem comecar/terminar com -"
+            echo "  - Deve ser igual ao nome do diretorio"
+            echo ""
+            echo "Regras do description:"
+            echo "  - Max 1024 chars"
+            echo "  - Descreva o que faz E quando usar"
+            echo ""
+            echo "Campos recomendados:"
+            echo ""
+            echo "  license: Apache-2.0"
+            echo "  compatibility: Designed for Claude Code"
+            echo "  metadata:"
+            echo "    author: seu-time"
+            echo "    version: \"1.0\""
+            echo ""
+            echo "Docs: CONTRIBUTING.md"
+            echo "Spec: https://agentskills.io/specification"
+            exit 1
+          else
+            echo "PASSED: All skills are valid"
+            exit 0
+          fi

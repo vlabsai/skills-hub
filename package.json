@@ -1,0 +1,19 @@
+{
+  "name": "vector-labs-skills-hub",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Vector Labs Skills Hub — site, CLI and skills content",
+  "scripts": {
+    "aggregate": "node scripts/aggregate-skills.js",
+    "build": "npm run aggregate && cd site && npm run build",
+    "dev": "npm run aggregate && cd site && npm run dev",
+    "test:cli": "node cli/bin/vector-labs-skills.js --help"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

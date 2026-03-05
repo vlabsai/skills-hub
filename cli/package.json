@@ -1,0 +1,23 @@
+{
+  "name": "@vector-labs/skills",
+  "version": "1.2.0",
+  "type": "module",
+  "description": "CLI to browse and install curated AI coding skills from Vector Labs Skills Hub",
+  "bin": {
+    "vector-labs-skills": "bin/vector-labs-skills.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vlabsai/skills-hub.git",
+    "directory": "cli"
+  },
+  "files": [
+    "bin/"
+  ]
+}
