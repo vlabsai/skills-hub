@@ -3,7 +3,7 @@
 /**
  * Vector Labs Skills CLI
  *
- * Install skills from foundation.skills-hub into your project.
+ * Install skills from vlabsai/skills-hub into your project.
  * Auto-detects your AI tool and installs to the correct location.
  *
  * Usage:
