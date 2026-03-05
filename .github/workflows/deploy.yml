@@ -48,6 +48,7 @@ jobs:
         working-directory: site
         env:
           SITE_URL: ${{ vars.SITE_URL }}
+          BASE_PATH: ${{ vars.BASE_PATH }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
