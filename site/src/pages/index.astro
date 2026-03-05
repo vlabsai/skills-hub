@@ -136,19 +136,19 @@ const categories = Object.entries(categoryCounts).map(([id, count]) => ({
           <div class="step-number">1</div>
           <h3>Configure GitHub Packages access</h3>
           <p class="step-desc">Add these lines to your <code>~/.npmrc</code> (one-time setup):</p>
-          <pre><code>@vector-labs:registry=https://npm.pkg.github.com
+          <pre><code>@vlabsai:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN</code></pre>
           <p class="step-desc">Use a <a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer">Personal Access Token</a> with <code>read:packages</code> scope. Or run <code>gh auth token</code> if you use GitHub CLI.</p>
         </div>
         <div class="step">
           <div class="step-number">2</div>
           <h3>Browse & pick a skill</h3>
-          <pre><code>npx @vector-labs/skills list</code></pre>
+          <pre><code>npx @vlabsai/skills list</code></pre>
         </div>
         <div class="step">
           <div class="step-number">3</div>
           <h3>Install into your project</h3>
-          <pre><code>npx @vector-labs/skills add generate-dashboard</code></pre>
+          <pre><code>npx @vlabsai/skills add generate-dashboard</code></pre>
           <p class="step-desc">Auto-detects your AI tool (Claude Code, Cursor, Copilot, Gemini) and installs to the right path.</p>
         </div>
       </div>

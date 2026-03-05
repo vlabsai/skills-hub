@@ -1,6 +1,6 @@
 {
-  "name": "@vector-labs/skills",
-  "version": "1.2.0",
+  "name": "@vlabsai/skills",
+  "version": "1.0.0",
   "type": "module",
   "description": "CLI to browse and install curated AI coding skills from Vector Labs Skills Hub",
   "bin": {

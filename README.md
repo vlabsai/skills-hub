@@ -23,14 +23,14 @@ Toda skill neste catálogo passa por review humano via Pull Request antes de ser
 ## Usar uma skill
 
 ```bash
-npx @vector-labs/skills add setup-statusline-cost
+npx @vlabsai/skills add setup-statusline-cost
 ```
 
 O CLI detecta automaticamente a ferramenta (`.claude/`, `.cursor/`, `.github/copilot-*`, `.gemini/`) e copia os arquivos para o diretório correto. Use `--tool <id>` para escolher manualmente.
 
 ```bash
-npx @vector-labs/skills list              # listar skills disponíveis
-npx @vector-labs/skills info <name>       # ver detalhes de uma skill
+npx @vlabsai/skills list              # listar skills disponíveis
+npx @vlabsai/skills info <name>       # ver detalhes de uma skill
 ```
 
 ## Criar uma skill
@@ -76,7 +76,7 @@ skill-hub/
 │   └── src/data/skills.json   # Gerado por aggregate-skills.js
 ├── cli/
 │   ├── bin/vector-labs-skills.js     # CLI entry point
-│   └── package.json           # @vector-labs/skills (publicável no GitHub Packages)
+│   └── package.json           # @vlabsai/skills (publicável no GitHub Packages)
 ├── scripts/
 │   └── aggregate-skills.js    # Lê skills/ → gera skills.json
 └── .github/workflows/
