@@ -86,7 +86,3 @@ skill-hub/
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
----
-
-Fork of [samueltauil/skills-hub](https://github.com/samueltauil/skills-hub), customized for Vector Labs.
