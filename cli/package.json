@@ -1,6 +1,6 @@
 {
   "name": "@vector-labs/skills",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "CLI to browse and install curated AI skills from Vector Labs Skills Hub",
   "bin": {
@@ -19,6 +19,7 @@
     "directory": "cli"
   },
   "files": [
-    "bin/"
+    "bin/",
+    "README.md"
   ]
 }
