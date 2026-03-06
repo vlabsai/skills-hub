@@ -44,7 +44,7 @@ Break research into 3-5 **independent** investigation angles. Each angle becomes
 - Include at least one critical/contrarian angle
 - If project context is relevant, dedicate one agent to local analysis
 
-**Agent types** (see [agent-templates](./reference/agent-templates.md) for full prompts):
+**Agent types** (see [agent-templates](./references/agent-templates.md) for full prompts):
 
 | Type | Tools | Use when |
 |------|-------|----------|
@@ -58,7 +58,7 @@ Break research into 3-5 **independent** investigation angles. Each angle becomes
 
 **CRITICAL: Do NOT use `run_in_background: true`.** Launch all agents as parallel Task calls in a single message. They execute concurrently, and each returns ONLY the agent's final message (the 3-5 line summary). Background agents write full conversation logs to output files — reading those with TaskOutput will overflow orchestrator context.
 
-**Context management**: Do NOT read reference files into orchestrator context. Instead, inline the relevant template from [agent-templates](./reference/agent-templates.md) directly into each agent's prompt.
+**Context management**: Do NOT read reference files into orchestrator context. Instead, inline the relevant template from [agent-templates](./references/agent-templates.md) directly into each agent's prompt.
 
 **Output directory**: Before launching agents, create an output directory:
 `[report-directory]/research-data/`
@@ -79,7 +79,7 @@ Task(subagent_type="Explore", description="Local context analysis", prompt=<temp
 ...
 ```
 
-Each agent returns ONLY a concise summary (NOT full findings) — see return format in [agent-templates](./reference/agent-templates.md). Full findings are written to the agent's output file.
+Each agent returns ONLY a concise summary (NOT full findings) — see return format in [agent-templates](./references/agent-templates.md). Full findings are written to the agent's output file.
 
 ### 4. Synthesize & Write Report (Delegated)
 
@@ -88,7 +88,7 @@ Each agent returns ONLY a concise summary (NOT full findings) — see return for
 **Output location**: `[relevant-project-or-area-folder]/research-[topic-slug]-[YYYY-MM-DD].md`
 If no clear project context, ask the user where to save.
 
-Spawn a single `general-purpose` synthesis agent using the prompt from [synthesis-templates](./reference/synthesis-templates.md#synthesis-agent). Fill in:
+Spawn a single `general-purpose` synthesis agent using the prompt from [synthesis-templates](./references/synthesis-templates.md#synthesis-agent). Fill in:
 - **RESEARCH BRIEF**: the original input context
 - **AGENT SUMMARIES**: the 3-5 line summaries returned by each agent
 - **OUTPUT DIRECTORY**: path to `research-data/`
@@ -99,7 +99,7 @@ The orchestrator receives only a summary — the full report is written to disk 
 
 ### 4b. Handle Late Agents
 
-If agents complete after synthesis, spawn a patch agent using the prompt from [synthesis-templates](./reference/synthesis-templates.md#patch-agent-late-findings). Fill in the late agent's output file path and the existing report path.
+If agents complete after synthesis, spawn a patch agent using the prompt from [synthesis-templates](./references/synthesis-templates.md#patch-agent-late-findings). Fill in the late agent's output file path and the existing report path.
 
 ### 5. Validate
 
@@ -137,6 +137,6 @@ If validation fails: fix and re-validate (max 2 attempts).
 
 ## References (for sub-agents, not orchestrator)
 
-- [Agent Templates](./reference/agent-templates.md) — Structured prompts for research agents. Pass to sub-agents or inline into their prompts.
-- [Synthesis Templates](./reference/synthesis-templates.md) — Prompts for synthesis and patch agents.
+- [Agent Templates](./references/agent-templates.md) — Structured prompts for research agents. Pass to sub-agents or inline into their prompts.
+- [Synthesis Templates](./references/synthesis-templates.md) — Prompts for synthesis and patch agents.
 - [Report Template](./templates/report_template.md) — Report output structure. Synthesis agent reads this from disk.
