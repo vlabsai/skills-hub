@@ -76,7 +76,7 @@ skill-hub/
 │   └── src/data/skills.json   # Gerado por aggregate-skills.js
 ├── cli/
 │   ├── bin/vector-labs-skills.js     # CLI entry point
-│   └── package.json           # @vector-labs/skills (publicável no GitHub Packages)
+│   └── package.json           # @vector-labs/skills (publicado no npmjs.com)
 ├── scripts/
 │   └── aggregate-skills.js    # Lê skills/ → gera skills.json
 └── .github/workflows/

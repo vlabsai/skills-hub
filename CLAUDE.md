@@ -44,7 +44,7 @@ gh pr create --repo vlabsai/skills-hub --base main --head feat/nome
 
 ## Publicar CLI (`@vector-labs/skills`)
 
-O CLI vive em `cli/` e e publicado no GitHub Packages. Publicar **sempre de dentro do diretorio `cli/`** (nao da raiz).
+O CLI vive em `cli/` e e publicado no npmjs.com (publico). Publicar **sempre de dentro do diretorio `cli/`** (nao da raiz).
 
 ```bash
 # 1. Bump version em cli/package.json
@@ -52,8 +52,8 @@ O CLI vive em `cli/` e e publicado no GitHub Packages. Publicar **sempre de dent
 cd cli && npm publish
 ```
 
-- publishConfig no package.json ja aponta para `https://npm.pkg.github.com`
-- Para publicar, precisa de token com `write:packages` (via `~/.npmrc` ou `GITHUB_TOKEN`)
+- publishConfig no package.json aponta para `https://registry.npmjs.org`
+- Para publicar, precisa de token npm com permissao de publish
 - **NUNCA rodar `npm publish` da raiz** — publica o pacote errado (`vector-labs-skills-hub` em vez de `@vector-labs/skills`)
 
 ## Dependencias
