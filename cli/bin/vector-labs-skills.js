@@ -7,12 +7,12 @@
  * Auto-detects your AI tool and installs to the correct location.
  *
  * Usage:
- *   npx @vlabsai/skills add <skill-name>       Install a skill (auto-detect tool)
- *   npx @vlabsai/skills list                    List available skills
- *   npx @vlabsai/skills info <skill-name>       Show skill details
+ *   npx @vector-labs/skills add <skill-name>       Install a skill (auto-detect tool)
+ *   npx @vector-labs/skills list                    List available skills
+ *   npx @vector-labs/skills info <skill-name>       Show skill details
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, appendFileSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
 import { join, dirname, relative } from 'path';
 import { argv, exit, cwd, env, stdin, stdout } from 'process';
 import { createInterface } from 'readline';
@@ -146,92 +146,57 @@ function resolveGitHubToken() {
   return null;
 }
 
-function checkNpmrcSetup() {
-  const npmrcPath = join(homedir(), '.npmrc');
-  if (!existsSync(npmrcPath)) return { hasRegistry: false, hasAuth: false };
-  const content = readFileSync(npmrcPath, 'utf-8');
-  return {
-    hasRegistry: content.includes('@vlabsai:registry=https://npm.pkg.github.com'),
-    hasAuth: /\/\/npm\.pkg\.github\.com\/:_authToken=/.test(content),
-  };
-}
-
-function ensureAuth() {
-  const token = resolveGitHubToken();
-  if (!token) {
-    console.error(`\n  ${bold('Authentication required')}\n`);
-    console.error(`  The skills repo (${REPO_OWNER}/${REPO_NAME}) requires a GitHub token.\n`);
-    console.error(`  Run ${bold('npx @vlabsai/skills setup')} to configure authentication.\n`);
-    console.error(`  Or set GITHUB_TOKEN in your environment:\n`);
-    console.error(`    export GITHUB_TOKEN=$(gh auth token)\n`);
-    exit(1);
-  }
-  return token;
-}
-
 async function setupAuth() {
   console.log(`\n  ${bold('Vector Labs Skills — Setup')}\n`);
+  console.log(`  This is ${bold('optional')}. A GitHub token increases API rate limits.\n`);
 
-  const { hasRegistry, hasAuth } = checkNpmrcSetup();
-  const npmrcPath = join(homedir(), '.npmrc');
+  // Try to find an existing token
+  let token = resolveGitHubToken();
 
-  // Step 1: Check npm registry config
-  if (hasRegistry && hasAuth) {
-    success('.npmrc already configured for @vlabsai packages');
+  if (token) {
+    success('GitHub token already configured');
   } else {
-    info('Configuring ~/.npmrc for GitHub Packages...\n');
-
-    // Try to get a token
-    let token = tryGhAuthToken();
+    // Try gh CLI first
+    token = tryGhAuthToken();
 
     if (token) {
       info(`Found token from ${bold('gh auth token')}`);
     } else {
-      console.log(`  No GitHub CLI token found. You need a GitHub Personal Access Token`);
-      console.log(`  with ${bold('read:packages')} and ${bold('repo')} scopes.\n`);
-      console.log(`  Create one at: ${dim('https://github.com/settings/tokens/new')}\n`);
-      token = await prompt('  Paste your token: ');
-      if (!token) error('No token provided.');
+      console.log(`  No GitHub CLI token found. You can set one with:\n`);
+      console.log(`    export GITHUB_TOKEN=$(gh auth token)\n`);
+      console.log(`  Or create a Personal Access Token at:`);
+      console.log(`  ${dim('https://github.com/settings/tokens/new')}\n`);
+      token = await prompt('  Paste your token (or press Enter to skip): ');
     }
 
-    // Validate token
-    info('Validating token...');
-    const res = await fetch('https://api.github.com/user', {
-      headers: { 'Authorization': `token ${token}`, 'User-Agent': 'vector-labs-skills-cli' }
-    });
+    if (token) {
+      // Validate token
+      info('Validating token...');
+      const res = await fetch('https://api.github.com/user', {
+        headers: { 'Authorization': `token ${token}`, 'User-Agent': 'vector-labs-skills-cli' }
+      });
 
-    if (!res.ok) {
-      error('Token is invalid or expired. Please check and try again.');
-    }
+      if (!res.ok) {
+        error('Token is invalid or expired. Please check and try again.');
+      }
 
-    const user = await res.json();
-    success(`Authenticated as ${bold(user.login)}`);
-
-    // Write .npmrc entries
-    const lines = [];
-    if (!hasRegistry) lines.push('@vlabsai:registry=https://npm.pkg.github.com');
-    if (!hasAuth) lines.push(`//npm.pkg.github.com/:_authToken=${token}`);
-
-    if (lines.length > 0) {
-      const existing = existsSync(npmrcPath) ? readFileSync(npmrcPath, 'utf-8') : '';
-      const separator = existing && !existing.endsWith('\n') ? '\n' : '';
-      appendFileSync(npmrcPath, separator + lines.join('\n') + '\n');
-      success(`Updated ${dim(npmrcPath)}`);
+      const user = await res.json();
+      success(`Authenticated as ${bold(user.login)}`);
+      console.log(`\n  To persist, add to your shell profile:\n`);
+      console.log(`    export GITHUB_TOKEN="${token}"\n`);
+    } else {
+      info('Skipped. The CLI works without a token (with lower rate limits).');
     }
   }
 
-  // Step 2: Verify access to the skills repo
+  // Verify access to the skills repo
   console.log('');
   info('Verifying access to skills repo...');
 
-  const token = resolveGitHubToken();
-  const res = await fetch(`${API_BASE}/contents/${SKILLS_DIR}?ref=${BRANCH}`, {
-    headers: {
-      'Authorization': `token ${token}`,
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'vector-labs-skills-cli'
-    }
-  });
+  const headers = { 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'vector-labs-skills-cli' };
+  if (token) headers['Authorization'] = `token ${token}`;
+
+  const res = await fetch(`${API_BASE}/contents/${SKILLS_DIR}?ref=${BRANCH}`, { headers });
 
   if (res.ok) {
     const data = await res.json();
@@ -241,12 +206,12 @@ async function setupAuth() {
     info(`Skills directory not found on branch ${bold(BRANCH)}. This is OK if skills aren't on main yet.`);
   } else {
     console.error(`  ${dim(`Status: ${res.status}`)}`);
-    error('Could not access the skills repo. Check that your token has repo access.');
+    info('Could not verify access. The repo is public — this may be a rate limit issue.');
   }
 
   console.log(`\n  ${bold('Setup complete!')} You can now run:\n`);
-  console.log(`    npx @vlabsai/skills list`);
-  console.log(`    npx @vlabsai/skills add <skill-name>\n`);
+  console.log(`    npx @vector-labs/skills list`);
+  console.log(`    npx @vector-labs/skills add <skill-name>\n`);
 }
 
 // ── Resolve install destination ──────────────────────────────────────────────
@@ -377,7 +342,7 @@ async function githubFetch(path) {
     console.error(`  ${bold('API rate limit or access error')} (${res.status})`);
     console.error(`  Try setting a GitHub token to increase rate limits:\n`);
     console.error(`    export GITHUB_TOKEN=$(gh auth token)\n`);
-    console.error(`  Or run ${bold('npx @vlabsai/skills setup')} for guided setup.\n`);
+    console.error(`  Or run ${bold('npx @vector-labs/skills setup')} for guided setup.\n`);
     exit(1);
   }
   if (res.status === 404) return null;
@@ -414,7 +379,7 @@ async function fetchSkillFiles(skillName) {
   if (LOCAL_SOURCE) {
     const skillDir = join(LOCAL_SOURCE, SKILLS_DIR, skillName);
     if (!existsSync(skillDir)) {
-      error(`Skill "${skillName}" not found. Run ${bold('npx @vlabsai/skills list')} to see available skills.`);
+      error(`Skill "${skillName}" not found. Run ${bold('npx @vector-labs/skills list')} to see available skills.`);
     }
 
     const allPaths = localCollectFiles(skillDir);
@@ -427,7 +392,7 @@ async function fetchSkillFiles(skillName) {
   info(`Fetching ${skillName} from ${REPO_OWNER}/${REPO_NAME}...`);
   const tree = await githubFetch(`/contents/${SKILLS_DIR}/${skillName}?ref=${BRANCH}`);
   if (!tree) {
-    error(`Skill "${skillName}" not found. Run ${bold('npx @vlabsai/skills list')} to see available skills.`);
+    error(`Skill "${skillName}" not found. Run ${bold('npx @vector-labs/skills list')} to see available skills.`);
   }
   return githubCollectFiles(tree, `${SKILLS_DIR}/${skillName}`);
 }
@@ -464,7 +429,7 @@ async function listSkills() {
     }
     console.log(`    ${name}${desc ? dim(`  ${desc}`) : ''}`);
   }
-  console.log(`\n  Run ${bold('npx @vlabsai/skills add <name>')} to install.\n`);
+  console.log(`\n  Run ${bold('npx @vector-labs/skills add <name>')} to install.\n`);
 }
 
 async function showInfo(skillName) {
@@ -546,12 +511,12 @@ if (!command || command === '--help' || command === '-h') {
   ${bold('Vector Labs Skills CLI')}
 
   \x1b[4mUsage:\x1b[0m
-    npx @vlabsai/skills list                      List available skills
-    npx @vlabsai/skills add <skill-name>          Auto-detect tool and install
-    npx @vlabsai/skills add <name> --tool cursor  Install for specific tool
-    npx @vlabsai/skills add <name> --dest <path>  Install to custom path
-    npx @vlabsai/skills info <skill-name>         Show skill details
-    npx @vlabsai/skills setup                     Configure auth (optional)
+    npx @vector-labs/skills list                      List available skills
+    npx @vector-labs/skills add <skill-name>          Auto-detect tool and install
+    npx @vector-labs/skills add <name> --tool cursor  Install for specific tool
+    npx @vector-labs/skills add <name> --dest <path>  Install to custom path
+    npx @vector-labs/skills info <skill-name>         Show skill details
+    npx @vector-labs/skills setup                     Configure auth (optional)
 
   \x1b[4mCommands:\x1b[0m
     list          List all available skills
@@ -579,10 +544,10 @@ if (!command || command === '--help' || command === '-h') {
     VECTOR_LABS_SKILLS_SOURCE    Local path to skills repo (same as --source)
 
   \x1b[4mExamples:\x1b[0m
-    npx @vlabsai/skills list
-    npx @vlabsai/skills add generate-dashboard
-    npx @vlabsai/skills add review-pr --tool cursor
-    npx @vlabsai/skills add diagnose-logs -y
+    npx @vector-labs/skills list
+    npx @vector-labs/skills add generate-dashboard
+    npx @vector-labs/skills add review-pr --tool cursor
+    npx @vector-labs/skills add diagnose-logs -y
 `);
   exit(0);
 }
@@ -603,7 +568,7 @@ switch (command) {
   case 'install':
   case 'i': {
     const skillName = args[1];
-    if (!skillName) error('Missing skill name. Usage: npx @vlabsai/skills add <skill-name>');
+    if (!skillName) error('Missing skill name. Usage: npx @vector-labs/skills add <skill-name>');
     await addSkill(skillName);
     break;
   }
@@ -611,11 +576,11 @@ switch (command) {
   case 'info':
   case 'show': {
     const skillName = args[1];
-    if (!skillName) error('Missing skill name. Usage: npx @vlabsai/skills info <skill-name>');
+    if (!skillName) error('Missing skill name. Usage: npx @vector-labs/skills info <skill-name>');
     await showInfo(skillName);
     break;
   }
 
   default:
-    error(`Unknown command: ${command}. Run npx @vlabsai/skills --help`);
+    error(`Unknown command: ${command}. Run npx @vector-labs/skills --help`);
 }

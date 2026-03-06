@@ -15,7 +15,7 @@ body:
       description: What part of Skills Hub is affected?
       options:
         - Website
-        - CLI (npx @vlabsai/skills)
+        - CLI (npx @vector-labs/skills)
         - GitHub Actions
         - Documentation
         - Other

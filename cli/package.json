@@ -1,5 +1,5 @@
 {
-  "name": "@vlabsai/skills",
+  "name": "@vector-labs/skills",
   "version": "1.0.0",
   "type": "module",
   "description": "CLI to browse and install curated AI skills from Vector Labs Skills Hub",
@@ -10,7 +10,8 @@
     "node": ">=18"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   },
   "repository": {
     "type": "git",
