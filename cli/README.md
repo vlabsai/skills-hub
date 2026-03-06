@@ -11,7 +11,7 @@ Skills are markdown instructions that teach AI assistants (Claude Code, Cursor, 
 npx @vector-labs/skills list
 
 # Install a skill into your project
-npx @vector-labs/skills add generate-dashboard
+npx @vector-labs/skills add <skill-name>
 ```
 
 The CLI auto-detects your AI tool and installs to the right directory:
