@@ -24,7 +24,8 @@ const baseUrl = import.meta.env.BASE_URL;
       <nav class="container nav">
         <a href={`${baseUrl}`} class="logo">
           <img src={`${baseUrl}logo.png`} alt="Vector Labs" height="32" />
-          <span>Skills Hub</span>
+          <span class="logo-divider"></span>
+          <span class="logo-text">Skills Hub</span>
         </a>
         <div class="nav-links">
           <a href={`${baseUrl}`}>Home</a>
@@ -61,7 +62,7 @@ const baseUrl = import.meta.env.BASE_URL;
 
 <style>
   .header {
-    background-color: rgba(22, 27, 34, 0.85);
+    background-color: rgba(26, 26, 23, 0.85);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--color-border);
@@ -96,11 +97,32 @@ const baseUrl = import.meta.env.BASE_URL;
     transform: translateX(2px);
   }
 
+  .logo-divider {
+    width: 1px;
+    height: 1.25rem;
+    background-color: var(--color-border);
+    margin: 0 0.25rem;
+  }
+
+  .logo-text {
+    font-weight: 400;
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.01em;
+  }
+
+  .logo:hover .logo-text {
+    color: var(--color-accent);
+  }
+
   .logo img {
-    transition: transform var(--transition-normal, 0.2s ease);
+    filter: brightness(0) invert(1);
+    transition: transform var(--transition-normal, 0.2s ease),
+                filter var(--transition-normal, 0.2s ease);
   }
 
   .logo:hover img {
+    filter: brightness(0) invert(1) drop-shadow(0 0 4px rgba(232, 70, 28, 0.5));
     transform: scale(1.05);
   }
 
