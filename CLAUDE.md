@@ -1,7 +1,5 @@
 # Vector Labs Skills Hub
 
-Fork de samueltauil/skills-hub customizado para a Vector Labs.
-
 ## Estrutura
 
 - `skills/` — Skills source (cada skill e um diretorio com SKILL.md)
@@ -21,7 +19,6 @@ node cli/bin/vector-labs-skills.js --help  # testar CLI
 
 ## Principios
 
-- Manter customizacoes minimas do upstream para facilitar merge
 - Mudancas de branding: global.css (cores), Layout.astro (textos)
 - Categorias Vector Labs adicionadas: observability, troubleshooting (em 5 arquivos de pagina)
 - Skills ficam neste repo em skills/, aggregate-skills.js le daqui
@@ -29,7 +26,6 @@ node cli/bin/vector-labs-skills.js --help  # testar CLI
 ## Git remotes
 
 - `origin` — **fonte principal** (`vlabsai/skills-hub`). Push e PRs vao para ca.
-- `upstream` — repo original (`samueltauil/skills-hub`). Upstream puro.
 
 ### Workflow correto para feature branches
 
@@ -56,8 +52,8 @@ O CLI vive em `cli/` e e publicado no GitHub Packages. Publicar **sempre de dent
 cd cli && npm publish
 ```
 
-- Requer `.npmrc` com `//npm.pkg.github.com/:_authToken=<TOKEN>` configurado
 - publishConfig no package.json ja aponta para `https://npm.pkg.github.com`
+- Para publicar, precisa de token com `write:packages` (via `~/.npmrc` ou `GITHUB_TOKEN`)
 - **NUNCA rodar `npm publish` da raiz** — publica o pacote errado (`vector-labs-skills-hub` em vez de `@vlabsai/skills`)
 
 ## Dependencias

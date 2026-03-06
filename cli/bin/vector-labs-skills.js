@@ -374,8 +374,10 @@ async function githubFetch(path) {
 
   if (res.status === 401 || res.status === 403) {
     console.error('');
-    console.error(`  ${bold('Authentication failed')}`);
-    console.error(`  Run ${bold('npx @vlabsai/skills setup')} to configure access.\n`);
+    console.error(`  ${bold('API rate limit or access error')} (${res.status})`);
+    console.error(`  Try setting a GitHub token to increase rate limits:\n`);
+    console.error(`    export GITHUB_TOKEN=$(gh auth token)\n`);
+    console.error(`  Or run ${bold('npx @vlabsai/skills setup')} for guided setup.\n`);
     exit(1);
   }
   if (res.status === 404) return null;
@@ -422,7 +424,6 @@ async function fetchSkillFiles(skillName) {
     }));
   }
 
-  ensureAuth();
   info(`Fetching ${skillName} from ${REPO_OWNER}/${REPO_NAME}...`);
   const tree = await githubFetch(`/contents/${SKILLS_DIR}/${skillName}?ref=${BRANCH}`);
   if (!tree) {
@@ -440,7 +441,6 @@ async function listSkills() {
     info(`Reading skills from ${LOCAL_SOURCE}...`);
     skillNames = localListSkills(LOCAL_SOURCE);
   } else {
-    ensureAuth();
     info(`Fetching skills from ${REPO_OWNER}/${REPO_NAME}...`);
     const tree = await githubFetch(`/contents/${SKILLS_DIR}?ref=${BRANCH}`);
     if (!tree) error('Could not fetch skills directory.');
@@ -468,7 +468,6 @@ async function listSkills() {
 }
 
 async function showInfo(skillName) {
-  if (!LOCAL_SOURCE) ensureAuth();
   info(`Fetching ${skillName}...`);
 
   let content;
@@ -547,18 +546,18 @@ if (!command || command === '--help' || command === '-h') {
   ${bold('Vector Labs Skills CLI')}
 
   \x1b[4mUsage:\x1b[0m
-    npx @vlabsai/skills setup                     Configure authentication (run first!)
+    npx @vlabsai/skills list                      List available skills
     npx @vlabsai/skills add <skill-name>          Auto-detect tool and install
     npx @vlabsai/skills add <name> --tool cursor  Install for specific tool
     npx @vlabsai/skills add <name> --dest <path>  Install to custom path
-    npx @vlabsai/skills list                      List available skills
     npx @vlabsai/skills info <skill-name>         Show skill details
+    npx @vlabsai/skills setup                     Configure auth (optional)
 
   \x1b[4mCommands:\x1b[0m
-    setup         Configure GitHub authentication (~/.npmrc)
-    add <name>    Install a skill into your project
     list          List all available skills
+    add <name>    Install a skill into your project
     info <name>   Show skill metadata and files
+    setup         Configure GitHub token (optional — increases API rate limits)
 
   \x1b[4mOptions:\x1b[0m
     --tool <id>       Target tool: claude-code, cursor, copilot, gemini
@@ -574,8 +573,8 @@ if (!command || command === '--help' || command === '-h') {
       .github/copilot-* → Copilot      → .github/skills/
       .gemini/          → Gemini CLI   → .gemini/skills/
 
-  \x1b[4mEnvironment:\x1b[0m
-    GITHUB_TOKEN          GitHub token for private repo access
+  \x1b[4mEnvironment (optional):\x1b[0m
+    GITHUB_TOKEN          GitHub token (increases API rate limits)
     GH_TOKEN              Alternative token variable (used by gh CLI)
     VECTOR_LABS_SKILLS_SOURCE    Local path to skills repo (same as --source)
 

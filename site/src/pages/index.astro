@@ -131,22 +131,15 @@ const categories = Object.entries(categoryCounts).map(([id, count]) => ({
       <h2 class="section-title text-center">How to Use</h2>
       <p class="section-subtitle text-center">Skills live in this repo and work with any AI tool.</p>
 
-      <div class="install-steps">
+      <div class="install-steps install-steps-2">
         <div class="step">
           <div class="step-number">1</div>
-          <h3>Configure GitHub Packages access</h3>
-          <p class="step-desc">Add these lines to your <code>~/.npmrc</code> (one-time setup):</p>
-          <pre><code>@vlabsai:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN</code></pre>
-          <p class="step-desc">Use a <a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer">Personal Access Token</a> with <code>read:packages</code> scope. Or run <code>gh auth token</code> if you use GitHub CLI.</p>
+          <h3>Browse & pick a skill</h3>
+          <pre><code>npx @vlabsai/skills list</code></pre>
+          <p class="step-desc">Explore the catalog or use the CLI to see all available skills.</p>
         </div>
         <div class="step">
           <div class="step-number">2</div>
-          <h3>Browse & pick a skill</h3>
-          <pre><code>npx @vlabsai/skills list</code></pre>
-        </div>
-        <div class="step">
-          <div class="step-number">3</div>
           <h3>Install into your project</h3>
           <pre><code>npx @vlabsai/skills add generate-dashboard</code></pre>
           <p class="step-desc">Auto-detects your AI tool (Claude Code, Cursor, Copilot, Gemini) and installs to the right path.</p>
@@ -366,6 +359,11 @@ const categories = Object.entries(categoryCounts).map(([id, count]) => ({
     gap: 2rem;
     max-width: 1100px;
     margin: 0 auto;
+  }
+
+  .install-steps-2 {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 750px;
   }
 
   .step {
