@@ -1,6 +1,6 @@
 # Vector Labs Skills Hub
 
-Catálogo de skills que ensinam assistentes de IA (Claude Code, Cursor, Copilot, Gemini) a executar tarefas de desenvolvimento da Vector Labs.
+Catálogo de skills que ensinam assistentes de IA (Claude Code, Cursor, Copilot, Gemini) a executar tarefas do dia a dia da Vector Labs.
 
 ![Homepage](.github/pr-assets/01-homepage.png)
 
