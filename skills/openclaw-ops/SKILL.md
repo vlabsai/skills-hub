@@ -13,6 +13,10 @@ metadata:
 tags: [devops, infrastructure, ai-agents]
 complexity: advanced
 featured: true
+links:
+  - label: Diagrama Interativo de Arquitetura
+    url: https://skills.vectorlabs.com.br/openclaw-ops/arquitetura.html
+    icon: "🏗️"
 ---
 
 # OpenClaw Operations

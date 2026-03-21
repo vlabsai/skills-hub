@@ -145,7 +145,8 @@ function processSkill(skillPath, skillName) {
     featured: frontmatter.featured || false,
     complexity: frontmatter.complexity || 'intermediate',
     compatibility: frontmatter.compatibility || null,
-    platforms: frontmatter.platforms || ['windows', 'macos', 'linux']
+    platforms: frontmatter.platforms || ['windows', 'macos', 'linux'],
+    links: frontmatter.links || []
   };
 
   return skill;

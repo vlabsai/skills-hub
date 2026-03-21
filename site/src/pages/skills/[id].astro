@@ -57,6 +57,7 @@ interface Props {
     complexity: string;
     compatibility: string | null;
     platforms: string[];
+    links: { label: string; url: string; icon?: string }[];
   };
 }
 
@@ -365,6 +366,26 @@ const allFilesJson = JSON.stringify(skill.files.map(f => ({
               ))}
             </div>
           </div>
+
+          {skill.links && skill.links.length > 0 && (
+            <div class="sidebar-card">
+              <h3>Resources</h3>
+              <ul class="links-list">
+                {skill.links.map(link => (
+                  <li>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" class="resource-link">
+                      <span class="resource-icon">{link.icon || '🔗'}</span>
+                      <span>{link.label}</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                      </svg>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div class="sidebar-card">
             <h3>Related Skills</h3>
@@ -1024,6 +1045,60 @@ const allFilesJson = JSON.stringify(skill.files.map(f => ({
     border-radius: var(--radius-full);
     font-size: 0.75rem;
     color: var(--color-text-secondary);
+  }
+
+  .links-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .links-list li {
+    margin-bottom: 0.5rem;
+  }
+
+  .links-list li:last-child {
+    margin-bottom: 0;
+  }
+
+  .resource-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .resource-link:hover {
+    border-color: var(--color-accent);
+    background: var(--color-bg-secondary);
+    color: var(--color-accent);
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+
+  .resource-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .resource-link span:nth-child(2) {
+    flex: 1;
+  }
+
+  .resource-link svg {
+    flex-shrink: 0;
+    opacity: 0.4;
+  }
+
+  .resource-link:hover svg {
+    opacity: 1;
   }
 
   .related-list {
