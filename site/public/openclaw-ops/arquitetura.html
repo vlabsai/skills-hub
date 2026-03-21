@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arquitetura OpenClaw + Antfarm</title>
+<title>Arquitetura OpenClaw</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap');
 :root {
@@ -88,159 +88,19 @@ header p{color:var(--txd);font-size:.88rem;max-width:600px;margin:0 auto}
 <div class="wrap">
 
 <header>
-  <h1>🦞 OpenClaw + 🐜 Antfarm</h1>
+  <h1>🦞 OpenClaw</h1>
   <p>Clique em qualquer componente para expandir e entender em profundidade</p>
 </header>
 
 <div class="legend">
   <span><i style="background:var(--oc)"></i>OpenClaw</span>
   <span><i style="background:var(--llm)"></i>LLM Provider</span>
-  <span><i style="background:var(--af)"></i>Antfarm</span>
   <span><i style="background:var(--ch)"></i>Channels</span>
   <span><i style="background:var(--st)"></i>Storage</span>
   <span><i style="background:var(--red)"></i>Fronteira API</span>
 </div>
 
 <div class="stack">
-
-  <!-- ANTFARM -->
-  <div class="lyr af">
-    <span class="lyr-tag">🐜 Antfarm — Orquestração de Times (projeto externo)</span>
-    <div class="chips" style="margin-top:.5rem">
-      <div class="chip af" onclick="toggle('af-workflow')">workflow.yml</div>
-      <div class="chip af" onclick="toggle('af-agents')">Agentes YAML</div>
-      <div class="chip af" onclick="toggle('af-db')">antfarm.db</div>
-      <div class="chip af" onclick="toggle('af-polling')">Cron Polling</div>
-      <div class="chip af" onclick="toggle('af-dashboard')">Dashboard :3333</div>
-      <div class="chip af" onclick="toggle('af-handoff')">KEY:VALUE Handoff</div>
-    </div>
-
-    <div class="detail" id="af-workflow">
-      <h3>📄 workflow.yml <span class="owner af">ANTFARM</span></h3>
-      <p>Define o pipeline de agentes em YAML. O OpenClaw <strong>não sabe</strong> o que é um workflow.yml — é 100% conceito do Antfarm.</p>
-      <div class="sep"></div>
-      <p><strong>O que contém:</strong></p>
-      <ul>
-        <li><strong>agents:</strong> lista de agentes com id, role, workspace files</li>
-        <li><strong>steps:</strong> sequência de passos, cada um executado por um agente</li>
-        <li><strong>input:</strong> prompt com variáveis <code>{{task}}</code>, <code>{{skill_name}}</code></li>
-        <li><strong>on_fail:</strong> retry automático ou escalação para humano</li>
-      </ul>
-      <pre>id: skill-create
-steps:
-  - id: research
-    agent: researcher
-    input: |
-      Research requirements for: {{task}}
-      Reply with:
-      STATUS: done
-      SKILL_NAME: nome-da-skill
-    expects: "STATUS: done"
-    on_fail:
-      escalate_to: human</pre>
-      <p><strong>Relação com OpenClaw:</strong> O workflow.yml é interpretado pelo Antfarm CLI, que traduz cada step em cron jobs e sessões do OpenClaw. O gateway nunca vê o YAML.</p>
-    </div>
-
-    <div class="detail" id="af-agents">
-      <h3>🤖 Agentes YAML <span class="owner both">FORMATO: OpenClaw → CONTEÚDO: Antfarm</span></h3>
-      <p>Cada agente do Antfarm tem 3 arquivos Markdown — o <strong>formato</strong> é do OpenClaw, mas o <strong>conteúdo</strong> é escrito pelo Antfarm.</p>
-      <div class="sep"></div>
-      <ul>
-        <li><strong>AGENTS.md</strong> — Instruções operacionais + output format. Prioridade alta no prompt.</li>
-        <li><strong>SOUL.md</strong> — Personalidade (10-20 linhas). "Você é cético e rigoroso..."</li>
-        <li><strong>IDENTITY.md</strong> — Nome e role (2-5 linhas). "Name: Pesquisador"</li>
-      </ul>
-      <p><strong>Quando o Antfarm instala:</strong> copia esses arquivos para o workspace do agente no OpenClaw (<code>~/.openclaw/workspaces/workflows/</code>). A partir daí, o OpenClaw os trata como qualquer outro workspace file — injeta no prompt do LLM.</p>
-      <p><strong>O LLM vê:</strong> o conteúdo como parte do system prompt. Não sabe que veio do Antfarm.</p>
-    </div>
-
-    <div class="detail" id="af-db">
-      <h3>🗃️ antfarm.db (SQLite) <span class="owner af">ANTFARM</span></h3>
-      <p>Banco de dados <strong>exclusivo do Antfarm</strong>. NÃO é o SQLite de memória/embeddings do OpenClaw. São bancos completamente separados.</p>
-      <div class="sep"></div>
-      <pre>~/.openclaw/antfarm/antfarm.db    ← ANTFARM (runs, steps, context)
-~/.openclaw/memory/&lt;id&gt;.sqlite    ← OPENCLAW (embeddings, busca semântica)
-
-NÃO se falam. São sistemas independentes.</pre>
-      <p><strong>Tabelas do antfarm.db:</strong></p>
-      <ul>
-        <li><strong>runs</strong> — workflow runs (id, status, context JSON, timestamps)</li>
-        <li><strong>steps</strong> — etapas de cada run (id, status, input, output)</li>
-        <li><strong>stories</strong> — user stories (para workflow feature-dev)</li>
-      </ul>
-      <p><strong>Context JSON:</strong> acumula KEY:VALUE de cada step completado. Quando o step 2 precisa de <code>{{skill_name}}</code>, o Antfarm busca no context do run.</p>
-    </div>
-
-    <div class="detail" id="af-polling">
-      <h3>⏰ Cron Polling (Two-Phase) <span class="owner both">ANTFARM cria → OPENCLAW executa</span></h3>
-      <p>O Antfarm NÃO roda processos próprios. Ele <strong>registra cron jobs no OpenClaw</strong> que fazem polling a cada 5 min.</p>
-      <div class="sep"></div>
-      <pre>FASE 1 — PEEK (barata, ~2s)
-┌─────────────────────────────────────────────┐
-│ Cron dispara → OpenClaw spawna sessão       │
-│ Agente executa: step peek <agent-id>        │
-│ Resultado: NO_WORK → para. HAS_WORK → fase 2│
-└─────────────────────────────────────────────┘
-
-FASE 2 — CLAIM + TRABALHO (completa, ~1-5 min)
-┌─────────────────────────────────────────────┐
-│ Agente executa: step claim <agent-id>       │
-│ Recebe: {"stepId":"...", "input":"..."}     │
-│ Trabalha (sessão fresh, sem memória)        │
-│ Executa: step complete <stepId>             │
-│ Output com KEY: VALUE → salvo no antfarm.db │
-└─────────────────────────────────────────────┘</pre>
-      <p><strong>⚠️ Cada peek consome 1 chamada de API</strong> porque spawna uma sessão LLM. Com 3 agentes a cada 5 min = ~36 chamadas/hora. Crons devem ser deletados após workflow completar.</p>
-      <p><strong>Quem faz o quê:</strong></p>
-      <ul>
-        <li><span class="owner af">Antfarm</span> — registra crons via <code>openclaw cron add</code></li>
-        <li><span class="owner oc">OpenClaw</span> — executa o cron, spawna a sessão, roda o agente</li>
-        <li><span class="owner af">Antfarm</span> — CLI <code>step peek/claim/complete</code> roda dentro da sessão</li>
-      </ul>
-    </div>
-
-    <div class="detail" id="af-dashboard">
-      <h3>📊 Dashboard :3333 <span class="owner af">ANTFARM</span></h3>
-      <p>Web server <strong>próprio do Antfarm</strong>. NÃO é a Control UI do OpenClaw (que roda na :18789).</p>
-      <div class="sep"></div>
-      <ul>
-        <li><strong>Kanban board</strong> — runs movendo pelas colunas (pending → running → done)</li>
-        <li><strong>Detail panel</strong> — steps com status, output, timeline</li>
-        <li><strong>Medic</strong> — indicador de saúde (steps travados, crons órfãos)</li>
-        <li><strong>Auto-refresh</strong> — board a cada 30s, panel a cada 5s</li>
-        <li><strong>Somente leitura</strong> — não permite gerenciar crons ou editar runs pela UI</li>
-      </ul>
-      <p><strong>Acesso remoto:</strong> <code>ssh -f -N -L 3333:127.0.0.1:3333 user@host</code> → <code>http://localhost:3333</code></p>
-      <p><strong>Stack:</strong> Vanilla JS + HTML, zero dependências. Lê direto do antfarm.db.</p>
-    </div>
-
-    <div class="detail" id="af-handoff">
-      <h3>🔗 KEY:VALUE Handoff <span class="owner af">ANTFARM</span></h3>
-      <p>Como dados fluem entre agentes que <strong>nunca se comunicam diretamente</strong>. Cada sessão é 100% isolada.</p>
-      <div class="sep"></div>
-      <pre>Step 1 (Pesquisador) output:       Step 2 (Desenvolvedor) input:
-────────────────────────           ─────────────────────────
-STATUS: done                       SKILL_NAME: {{skill_name}}
-SKILL_NAME: youtube-summary   →    SCOPE: {{scope}}
-SCOPE: extrair legendas...         TOOLS_NEEDED: {{tools_needed}}
-TOOLS_NEEDED: exec, read           ...
-
-        ┌───────────────────────┐
-        │   antfarm.db          │
-        │   runs.context (JSON) │
-        │   Acumula tudo        │
-        └───────────────────────┘
-
-1. Agente 1 termina → output com KEY: VALUE
-2. Antfarm parseia as linhas KEY: VALUE do output
-3. Salva no campo "context" do run no SQLite
-4. Quando agente 2 é ativado, Antfarm substitui
-   {{key}} no input do step pelo valor do context</pre>
-      <p><strong>O OpenClaw não participa desse handoff.</strong> É 100% lógica do Antfarm CLI. O OpenClaw só spawna as sessões — não sabe que existe um "pipeline".</p>
-    </div>
-
-    <div class="lyr-note">↓ usa crons + sessões do OpenClaw ↓</div>
-  </div>
 
   <!-- OPENCLAW -->
   <div class="lyr oc">
@@ -267,7 +127,7 @@ TOOLS_NEEDED: exec, read           ...
         <li><strong>Channel Adapters</strong> — Baileys (WhatsApp), grammY (Telegram), discord.js, Slack SDK, +40 canais</li>
         <li><strong>Auth & Device Pairing</strong> — Ed25519 challenge-response. Dispositivos se autenticam via assinatura criptográfica.</li>
         <li><strong>Event Bus</strong> — tick a cada 15s, presence, health monitor</li>
-        <li><strong>Cron Scheduler</strong> — executa jobs registrados (usado pelo Antfarm)</li>
+        <li><strong>Cron Scheduler</strong> — executa jobs registrados</li>
         <li><strong>Health Monitor</strong> — verifica canais a cada 5 min, auto-restart até 10x/hora</li>
       </ul>
       <pre>Protocolo WebSocket:
@@ -388,7 +248,7 @@ Profiles:
       <div class="sep"></div>
       <pre>Precedência (alta → baixa):
 1. Workspace: &lt;workspace&gt;/skills/     (maior)
-2. Managed:   ~/.openclaw/skills/      (onde Antfarm cria)
+2. Managed:   ~/.openclaw/skills/
 3. Bundled:   dentro do pacote OpenClaw
 4. Extra:     via skills.load.extraDirs</pre>
       <p><strong>Lazy-loading:</strong> O prompt inclui apenas um <strong>registry compacto</strong> (nome + descrição). O SKILL.md completo só é lido quando o LLM decide usar a skill (via tool <code>read</code>).</p>
@@ -410,7 +270,7 @@ metadata: {"openclaw":{"emoji":"▶️","os":["linux"]}}
 
     <div class="detail" id="oc-cron">
       <h3>⏱️ Cron Engine <span class="owner oc">OPENCLAW</span></h3>
-      <p>Agendador de jobs built-in no gateway. Dispara sessões de agente em schedule. O Antfarm usa isso como infraestrutura para polling.</p>
+      <p>Agendador de jobs built-in no gateway. Dispara sessões de agente em schedule.</p>
       <div class="sep"></div>
       <pre>openclaw cron add --name "job" --agent &lt;id&gt; \
   --every 5m --session isolated \
@@ -677,7 +537,6 @@ O QUE O LLM NÃO VÊ:
   ❌ Sessions de outros usuários
   ❌ Memória não injetada no prompt
   ❌ Conversas anteriores (se não estão no histórico)
-  ❌ O Antfarm ou seus workflows
   ❌ OAuth tokens, API keys, credentials</pre>
     </div>
 
@@ -780,7 +639,6 @@ Hot-reload modes:
 ├── credentials/                   # Secrets (0600)
 ├── browser/                       # Perfil Chrome
 ├── identity/device.json           # Ed25519 keypair
-├── antfarm/antfarm.db             # ← ANTFARM (separado!)
 └── logs/ media/ devices/          # Auxiliares</pre>
     </div>
 

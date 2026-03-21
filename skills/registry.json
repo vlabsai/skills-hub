@@ -1916,7 +1916,7 @@
     {
       "id": "openclaw-ops",
       "name": "openclaw-ops",
-      "description": "Referencia operacional completa do OpenClaw — arquitetura, gateway, agentes, skills, channels, sessions, memoria, tools, config, seguranca, Antfarm e OAuth. Assets por topico para consulta sob demanda.",
+      "description": "Referencia operacional do OpenClaw — arquitetura, gateway, agentes, skills, channels, sessions, memoria, tools, config, seguranca e OAuth. Assets por topico para consulta sob demanda.",
       "shortDescription": "OpenClaw operations reference",
       "category": "ai-agents",
       "author": "vector-labs",
@@ -1926,7 +1926,6 @@
         "openclaw gateway",
         "openclaw agent",
         "openclaw skill",
-        "antfarm workflow",
         "openclaw config",
         "openclaw memory",
         "openclaw channels"
@@ -1948,8 +1947,41 @@
         "openclaw",
         "ai-agents",
         "infrastructure",
-        "devops",
-        "antfarm"
+        "devops"
+      ]
+    },
+    {
+      "id": "antfarm-ops",
+      "name": "antfarm-ops",
+      "description": "Referencia operacional do Antfarm — orquestrador de times de agentes AI sobre OpenClaw. Arquitetura Ralph Loop, workflows YAML, dashboard, patches, operacao.",
+      "shortDescription": "Antfarm multi-agent workflows reference",
+      "category": "ai-agents",
+      "author": "vector-labs",
+      "license": "Apache-2.0",
+      "triggers": [
+        "antfarm",
+        "antfarm workflow",
+        "multi-agent",
+        "agent team"
+      ],
+      "complexity": "advanced",
+      "platforms": [
+        "macos",
+        "linux"
+      ],
+      "source": {
+        "repo": "https://github.com/vlabsai/skills-hub",
+        "repoName": "vlabsai/skills-hub",
+        "path": "skills/antfarm-ops",
+        "skillFile": "SKILL.md",
+        "branch": "main"
+      },
+      "featured": true,
+      "tags": [
+        "antfarm",
+        "ai-agents",
+        "workflows",
+        "multi-agent"
       ]
     }
   ]
