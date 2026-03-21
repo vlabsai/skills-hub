@@ -19,6 +19,10 @@ featured: true
 
 Conhecimento operacional generico do OpenClaw. Nada especifico de instancia — serve para operar qualquer setup. Assets organizados por topico, leia o relevante para a tarefa.
 
+## Diagrama Interativo
+
+[Explorar arquitetura visual OpenClaw + Antfarm](https://skills.vectorlabs.com.br/openclaw-ops/arquitetura.html) — Visao drill-down com todos os componentes expansiveis, fronteiras entre OpenClaw e LLM Provider, e deep dive no sistema de memoria.
+
 ## Arquitetura (resumo)
 
 Gateway WebSocket (:18789) = control plane unico (Node.js 22+). Recebe mensagens de Channels (40+), roteia para Agentes isolados via ReAct loop (reason → act → observe), usando Tools (~25 built-in) e Skills (SKILL.md runbooks). Estado em Sessions (JSONL), Memory (SQLite + vector embeddings), Git (workspace). Config: `~/.openclaw/openclaw.json` (JSON5).
