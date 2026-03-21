@@ -1,8 +1,8 @@
 ---
 name: openclaw-ops
 description: >-
-  Referencia operacional completa do OpenClaw — arquitetura, gateway, agentes,
-  skills, channels, sessions, memoria, tools, config, seguranca, Antfarm e OAuth.
+  Referencia operacional do OpenClaw — arquitetura, gateway, agentes,
+  skills, channels, sessions, memoria, tools, config, seguranca e OAuth.
   Assets por topico para consulta sob demanda. Use para operar qualquer setup OpenClaw.
 license: Apache-2.0
 compatibility: claude-code
@@ -21,11 +21,11 @@ links:
 
 # OpenClaw Operations
 
-Conhecimento operacional generico do OpenClaw. Nada especifico de instancia — serve para operar qualquer setup. Assets organizados por topico, leia o relevante para a tarefa.
+Conhecimento operacional generico do OpenClaw. Nada especifico de instancia — serve para operar qualquer setup. Assets organizados por topico, leia o relevante para a tarefa. Para orquestracao multi-agente com Antfarm, veja a skill `antfarm-ops`.
 
 ## Diagrama Interativo
 
-[Explorar arquitetura visual OpenClaw + Antfarm](https://skills.vectorlabs.com.br/openclaw-ops/arquitetura.html) — Visao drill-down com todos os componentes expansiveis, fronteiras entre OpenClaw e LLM Provider, e deep dive no sistema de memoria.
+[Explorar arquitetura visual OpenClaw](https://skills.vectorlabs.com.br/openclaw-ops/arquitetura.html) — Visao drill-down com todos os componentes expansiveis, fronteiras entre OpenClaw e LLM Provider, e deep dive no sistema de memoria.
 
 ## Arquitetura (resumo)
 
@@ -45,7 +45,6 @@ Gateway WebSocket (:18789) = control plane unico (Node.js 22+). Recebe mensagens
 | openclaw.json: estrutura, keys, secrets, env, $include, hot-reload | `assets/config.md` |
 | Seguranca: modelo de confianca, audit, sandbox, incident response | `assets/security.md` |
 | CLI: todos os comandos com subcomandos | `assets/cli.md` |
-| Antfarm: multi-agent workflows, YAML, dashboard, patches, operacao | `assets/antfarm.md` |
 | OAuth: lifecycle, auto-refresh, re-autenticacao manual, bugs | `assets/oauth.md` |
 | URLs da documentacao oficial para web_fetch | `assets/docs-urls.md` |
 
