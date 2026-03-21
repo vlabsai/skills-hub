@@ -68,4 +68,14 @@ const { placeholder = 'Search skills...', id = 'search' } = Astro.props;
       searchInput?.focus();
     }
   });
+
+  // If search input is on the home page (id="search"), redirect to /skills/?q= on Enter
+  if (searchInput?.id === 'search') {
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && searchInput.value.trim()) {
+        const base = import.meta.env.BASE_URL || '/';
+        window.location.href = `${base}skills/?q=${encodeURIComponent(searchInput.value.trim())}`;
+      }
+    });
+  }
 </script>
