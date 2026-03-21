@@ -198,4 +198,13 @@ const categories = categoryIds.map(id => ({
 
   searchInput?.addEventListener('input', filterSkills);
   categoryFilter?.addEventListener('change', filterSkills);
+
+  // Pre-fill from ?q= query parameter
+  const params = new URLSearchParams(window.location.search);
+  const q = params.get('q');
+  if (q && searchInput) {
+    searchInput.value = q;
+    filterSkills();
+    searchInput.focus();
+  }
 </script>
