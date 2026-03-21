@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arquitetura OpenClaw + Antfarm</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+:root {
+  --bg:#07090f;--bg2:#0d1117;--card:#131820;--bdr:#1e2a3a;
+  --tx:#c9d1d9;--txd:#6e7681;--txb:#f0f6fc;
+  --oc:#f97316;--ocd:#7c2d12;--ocg:rgba(249,115,22,0.08);
+  --llm:#818cf8;--llmd:#3730a3;--llmg:rgba(129,140,248,0.08);
+  --af:#34d399;--afd:#064e3b;--afg:rgba(52,211,153,0.08);
+  --ch:#f472b6;--chd:#831843;--chg:rgba(244,114,182,0.08);
+  --st:#fbbf24;--std:#78350f;--stg:rgba(251,191,36,0.08);
+  --red:#ef4444;--r:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);line-height:1.6}
+.wrap{max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+header{text-align:center;margin-bottom:2rem}
+header h1{font-family:'JetBrains Mono',monospace;font-size:1.6rem;font-weight:700;color:var(--txb);margin-bottom:.4rem}
+header p{color:var(--txd);font-size:.88rem;max-width:600px;margin:0 auto}
+.legend{display:flex;justify-content:center;gap:1.2rem;flex-wrap:wrap;margin-bottom:1.5rem;font-size:.72rem;color:var(--txd)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:middle}
+
+/* Layers */
+.stack{display:flex;flex-direction:column;gap:0}
+.lyr{border:1px solid var(--bdr);padding:1.2rem 1.2rem .8rem;position:relative;transition:all .3s}
+.lyr:first-child{border-radius:var(--r) var(--r) 0 0}
+.lyr:last-child{border-radius:0 0 var(--r) var(--r)}
+.lyr+.lyr{margin-top:-1px}
+.lyr.af{background:var(--afg);border-color:var(--afd)}
+.lyr.oc{background:var(--ocg);border-color:var(--ocd)}
+.lyr.llm{background:var(--llmg);border-color:var(--llmd)}
+.lyr.ch{background:var(--chg);border-color:var(--chd)}
+.lyr.st{background:var(--stg);border-color:var(--std)}
+
+.lyr-tag{position:absolute;top:-9px;left:14px;padding:0 7px;font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--bg)}
+.af .lyr-tag{color:var(--af)}.oc .lyr-tag{color:var(--oc)}.llm .lyr-tag{color:var(--llm)}.ch .lyr-tag{color:var(--ch)}.st .lyr-tag{color:var(--st)}
+
+/* Boundary */
+.bnd{display:flex;align-items:center;gap:.6rem;padding:.45rem .8rem;background:rgba(239,68,68,.05);border:1px dashed var(--red);margin-top:-1px;font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--red);font-weight:600}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.3rem}
+.chip{padding:.45rem .8rem;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:500;cursor:pointer;transition:all .2s;border:1px solid transparent;user-select:none;position:relative}
+.chip:hover{transform:translateY(-1px);filter:brightness(1.2)}
+.chip.active{ring:2px}
+.chip.oc{background:rgba(249,115,22,.12);color:var(--oc);border-color:var(--ocd)}
+.chip.llm{background:rgba(129,140,248,.12);color:var(--llm);border-color:var(--llmd)}
+.chip.af{background:rgba(52,211,153,.12);color:var(--af);border-color:var(--afd)}
+.chip.ch{background:rgba(244,114,182,.12);color:var(--ch);border-color:var(--chd)}
+.chip.st{background:rgba(251,191,36,.12);color:var(--st);border-color:var(--std)}
+.chip.active.oc{box-shadow:0 0 0 2px var(--oc);background:rgba(249,115,22,.2)}
+.chip.active.llm{box-shadow:0 0 0 2px var(--llm);background:rgba(129,140,248,.2)}
+.chip.active.af{box-shadow:0 0 0 2px var(--af);background:rgba(52,211,153,.2)}
+.chip.active.ch{box-shadow:0 0 0 2px var(--ch);background:rgba(244,114,182,.2)}
+.chip.active.st{box-shadow:0 0 0 2px var(--st);background:rgba(251,191,36,.2)}
+
+/* Detail panel */
+.detail{max-height:0;overflow:hidden;transition:max-height .5s ease,margin .3s ease,padding .3s ease;background:var(--card);border:0 solid var(--bdr);border-radius:var(--r);margin:0;opacity:0}
+.detail.open{max-height:2000px;border-width:1px;margin:.6rem 0 .3rem;padding:1.2rem;opacity:1;transition:max-height .5s ease,margin .3s ease,padding .3s ease,opacity .3s ease}
+.detail h3{font-family:'JetBrains Mono',monospace;font-size:.9rem;font-weight:600;color:var(--txb);margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+.detail .owner{font-size:.6rem;padding:2px 6px;border-radius:3px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.owner.oc{background:rgba(249,115,22,.15);color:var(--oc)}
+.owner.llm{background:rgba(129,140,248,.15);color:var(--llm)}
+.owner.af{background:rgba(52,211,153,.15);color:var(--af)}
+.owner.both{background:rgba(239,68,68,.12);color:var(--red)}
+.detail p{font-size:.82rem;color:var(--txd);margin-bottom:.5rem}
+.detail strong{color:var(--tx)}
+.detail pre{font-family:'JetBrains Mono',monospace;font-size:.7rem;background:rgba(0,0,0,.4);padding:.8rem;border-radius:6px;overflow-x:auto;margin:.6rem 0;color:var(--txd);line-height:1.55}
+.detail code{font-family:'JetBrains Mono',monospace;font-size:.7rem;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px}
+.detail .sep{border-top:1px solid var(--bdr);margin:.8rem 0;opacity:.5}
+.detail ul{margin:.4rem 0 .4rem 1.2rem;font-size:.8rem;color:var(--txd)}
+.detail li{margin-bottom:.25rem}
+.detail li strong{color:var(--tx)}
+
+.lyr-note{font-size:.72rem;color:var(--txd);opacity:.6;margin-top:.4rem;text-align:center}
+
+@media(max-width:640px){
+  header h1{font-size:1.2rem}.wrap{padding:1rem}.lyr{padding:.8rem}.chip{font-size:.65rem;padding:.35rem .6rem}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>🦞 OpenClaw + 🐜 Antfarm</h1>
+  <p>Clique em qualquer componente para expandir e entender em profundidade</p>
+</header>
+
+<div class="legend">
+  <span><i style="background:var(--oc)"></i>OpenClaw</span>
+  <span><i style="background:var(--llm)"></i>LLM Provider</span>
+  <span><i style="background:var(--af)"></i>Antfarm</span>
+  <span><i style="background:var(--ch)"></i>Channels</span>
+  <span><i style="background:var(--st)"></i>Storage</span>
+  <span><i style="background:var(--red)"></i>Fronteira API</span>
+</div>
+
+<div class="stack">
+
+  <!-- ANTFARM -->
+  <div class="lyr af">
+    <span class="lyr-tag">🐜 Antfarm — Orquestração de Times (projeto externo)</span>
+    <div class="chips" style="margin-top:.5rem">
+      <div class="chip af" onclick="toggle('af-workflow')">workflow.yml</div>
+      <div class="chip af" onclick="toggle('af-agents')">Agentes YAML</div>
+      <div class="chip af" onclick="toggle('af-db')">antfarm.db</div>
+      <div class="chip af" onclick="toggle('af-polling')">Cron Polling</div>
+      <div class="chip af" onclick="toggle('af-dashboard')">Dashboard :3333</div>
+      <div class="chip af" onclick="toggle('af-handoff')">KEY:VALUE Handoff</div>
+    </div>
+
+    <div class="detail" id="af-workflow">
+      <h3>📄 workflow.yml <span class="owner af">ANTFARM</span></h3>
+      <p>Define o pipeline de agentes em YAML. O OpenClaw <strong>não sabe</strong> o que é um workflow.yml — é 100% conceito do Antfarm.</p>
+      <div class="sep"></div>
+      <p><strong>O que contém:</strong></p>
+      <ul>
+        <li><strong>agents:</strong> lista de agentes com id, role, workspace files</li>
+        <li><strong>steps:</strong> sequência de passos, cada um executado por um agente</li>
+        <li><strong>input:</strong> prompt com variáveis <code>{{task}}</code>, <code>{{skill_name}}</code></li>
+        <li><strong>on_fail:</strong> retry automático ou escalação para humano</li>
+      </ul>
+      <pre>id: skill-create
+steps:
+  - id: research
+    agent: researcher
+    input: |
+      Research requirements for: {{task}}
+      Reply with:
+      STATUS: done
+      SKILL_NAME: nome-da-skill
+    expects: "STATUS: done"
+    on_fail:
+      escalate_to: human</pre>
+      <p><strong>Relação com OpenClaw:</strong> O workflow.yml é interpretado pelo Antfarm CLI, que traduz cada step em cron jobs e sessões do OpenClaw. O gateway nunca vê o YAML.</p>
+    </div>
+
+    <div class="detail" id="af-agents">
+      <h3>🤖 Agentes YAML <span class="owner both">FORMATO: OpenClaw → CONTEÚDO: Antfarm</span></h3>
+      <p>Cada agente do Antfarm tem 3 arquivos Markdown — o <strong>formato</strong> é do OpenClaw, mas o <strong>conteúdo</strong> é escrito pelo Antfarm.</p>
+      <div class="sep"></div>
+      <ul>
+        <li><strong>AGENTS.md</strong> — Instruções operacionais + output format. Prioridade alta no prompt.</li>
+        <li><strong>SOUL.md</strong> — Personalidade (10-20 linhas). "Você é cético e rigoroso..."</li>
+        <li><strong>IDENTITY.md</strong> — Nome e role (2-5 linhas). "Name: Pesquisador"</li>
+      </ul>
+      <p><strong>Quando o Antfarm instala:</strong> copia esses arquivos para o workspace do agente no OpenClaw (<code>~/.openclaw/workspaces/workflows/</code>). A partir daí, o OpenClaw os trata como qualquer outro workspace file — injeta no prompt do LLM.</p>
+      <p><strong>O LLM vê:</strong> o conteúdo como parte do system prompt. Não sabe que veio do Antfarm.</p>
+    </div>
+
+    <div class="detail" id="af-db">
+      <h3>🗃️ antfarm.db (SQLite) <span class="owner af">ANTFARM</span></h3>
+      <p>Banco de dados <strong>exclusivo do Antfarm</strong>. NÃO é o SQLite de memória/embeddings do OpenClaw. São bancos completamente separados.</p>
+      <div class="sep"></div>
+      <pre>~/.openclaw/antfarm/antfarm.db    ← ANTFARM (runs, steps, context)
+~/.openclaw/memory/&lt;id&gt;.sqlite    ← OPENCLAW (embeddings, busca semântica)
+
+NÃO se falam. São sistemas independentes.</pre>
+      <p><strong>Tabelas do antfarm.db:</strong></p>
+      <ul>
+        <li><strong>runs</strong> — workflow runs (id, status, context JSON, timestamps)</li>
+        <li><strong>steps</strong> — etapas de cada run (id, status, input, output)</li>
+        <li><strong>stories</strong> — user stories (para workflow feature-dev)</li>
+      </ul>
+      <p><strong>Context JSON:</strong> acumula KEY:VALUE de cada step completado. Quando o step 2 precisa de <code>{{skill_name}}</code>, o Antfarm busca no context do run.</p>
+    </div>
+
+    <div class="detail" id="af-polling">
+      <h3>⏰ Cron Polling (Two-Phase) <span class="owner both">ANTFARM cria → OPENCLAW executa</span></h3>
+      <p>O Antfarm NÃO roda processos próprios. Ele <strong>registra cron jobs no OpenClaw</strong> que fazem polling a cada 5 min.</p>
+      <div class="sep"></div>
+      <pre>FASE 1 — PEEK (barata, ~2s)
+┌─────────────────────────────────────────────┐
+│ Cron dispara → OpenClaw spawna sessão       │
+│ Agente executa: step peek <agent-id>        │
+│ Resultado: NO_WORK → para. HAS_WORK → fase 2│
+└─────────────────────────────────────────────┘
+
+FASE 2 — CLAIM + TRABALHO (completa, ~1-5 min)
+┌─────────────────────────────────────────────┐
+│ Agente executa: step claim <agent-id>       │
+│ Recebe: {"stepId":"...", "input":"..."}     │
+│ Trabalha (sessão fresh, sem memória)        │
+│ Executa: step complete <stepId>             │
+│ Output com KEY: VALUE → salvo no antfarm.db │
+└─────────────────────────────────────────────┘</pre>
+      <p><strong>⚠️ Cada peek consome 1 chamada de API</strong> porque spawna uma sessão LLM. Com 3 agentes a cada 5 min = ~36 chamadas/hora. Crons devem ser deletados após workflow completar.</p>
+      <p><strong>Quem faz o quê:</strong></p>
+      <ul>
+        <li><span class="owner af">Antfarm</span> — registra crons via <code>openclaw cron add</code></li>
+        <li><span class="owner oc">OpenClaw</span> — executa o cron, spawna a sessão, roda o agente</li>
+        <li><span class="owner af">Antfarm</span> — CLI <code>step peek/claim/complete</code> roda dentro da sessão</li>
+      </ul>
+    </div>
+
+    <div class="detail" id="af-dashboard">
+      <h3>📊 Dashboard :3333 <span class="owner af">ANTFARM</span></h3>
+      <p>Web server <strong>próprio do Antfarm</strong>. NÃO é a Control UI do OpenClaw (que roda na :18789).</p>
+      <div class="sep"></div>
+      <ul>
+        <li><strong>Kanban board</strong> — runs movendo pelas colunas (pending → running → done)</li>
+        <li><strong>Detail panel</strong> — steps com status, output, timeline</li>
+        <li><strong>Medic</strong> — indicador de saúde (steps travados, crons órfãos)</li>
+        <li><strong>Auto-refresh</strong> — board a cada 30s, panel a cada 5s</li>
+        <li><strong>Somente leitura</strong> — não permite gerenciar crons ou editar runs pela UI</li>
+      </ul>
+      <p><strong>Acesso remoto:</strong> <code>ssh -f -N -L 3333:127.0.0.1:3333 user@host</code> → <code>http://localhost:3333</code></p>
+      <p><strong>Stack:</strong> Vanilla JS + HTML, zero dependências. Lê direto do antfarm.db.</p>
+    </div>
+
+    <div class="detail" id="af-handoff">
+      <h3>🔗 KEY:VALUE Handoff <span class="owner af">ANTFARM</span></h3>
+      <p>Como dados fluem entre agentes que <strong>nunca se comunicam diretamente</strong>. Cada sessão é 100% isolada.</p>
+      <div class="sep"></div>
+      <pre>Step 1 (Pesquisador) output:       Step 2 (Desenvolvedor) input:
+────────────────────────           ─────────────────────────
+STATUS: done                       SKILL_NAME: {{skill_name}}
+SKILL_NAME: youtube-summary   →    SCOPE: {{scope}}
+SCOPE: extrair legendas...         TOOLS_NEEDED: {{tools_needed}}
+TOOLS_NEEDED: exec, read           ...
+
+        ┌───────────────────────┐
+        │   antfarm.db          │
+        │   runs.context (JSON) │
+        │   Acumula tudo        │
+        └───────────────────────┘
+
+1. Agente 1 termina → output com KEY: VALUE
+2. Antfarm parseia as linhas KEY: VALUE do output
+3. Salva no campo "context" do run no SQLite
+4. Quando agente 2 é ativado, Antfarm substitui
+   {{key}} no input do step pelo valor do context</pre>
+      <p><strong>O OpenClaw não participa desse handoff.</strong> É 100% lógica do Antfarm CLI. O OpenClaw só spawna as sessões — não sabe que existe um "pipeline".</p>
+    </div>
+
+    <div class="lyr-note">↓ usa crons + sessões do OpenClaw ↓</div>
+  </div>
+
+  <!-- OPENCLAW -->
+  <div class="lyr oc">
+    <span class="lyr-tag">🦞 OpenClaw — Plataforma de Agentes</span>
+    <div class="chips" style="margin-top:.5rem">
+      <div class="chip oc" onclick="toggle('oc-gateway')">Gateway :18789</div>
+      <div class="chip oc" onclick="toggle('oc-agents')">Agentes</div>
+      <div class="chip oc" onclick="toggle('oc-react')">ReAct Loop</div>
+      <div class="chip oc" onclick="toggle('oc-tools')">Tools (~25)</div>
+      <div class="chip oc" onclick="toggle('oc-skills')">Skills</div>
+      <div class="chip oc" onclick="toggle('oc-cron')">Cron Engine</div>
+      <div class="chip oc" onclick="toggle('oc-sessions')">Sessions</div>
+      <div class="chip oc" onclick="toggle('oc-memory')">Memory</div>
+      <div class="chip oc" onclick="toggle('oc-compaction')">Compaction</div>
+    </div>
+
+    <div class="detail" id="oc-gateway">
+      <h3>🌐 Gateway <span class="owner oc">OPENCLAW</span></h3>
+      <p>Processo Node.js central. WebSocket server na porta 18789. <strong>Tudo</strong> passa por ele — mensagens, tool calls, crons, health checks. É o control plane único.</p>
+      <div class="sep"></div>
+      <p><strong>Componentes internos:</strong></p>
+      <ul>
+        <li><strong>Session Router</strong> — recebe mensagem → decide qual agente responde (via routing bindings)</li>
+        <li><strong>Channel Adapters</strong> — Baileys (WhatsApp), grammY (Telegram), discord.js, Slack SDK, +40 canais</li>
+        <li><strong>Auth & Device Pairing</strong> — Ed25519 challenge-response. Dispositivos se autenticam via assinatura criptográfica.</li>
+        <li><strong>Event Bus</strong> — tick a cada 15s, presence, health monitor</li>
+        <li><strong>Cron Scheduler</strong> — executa jobs registrados (usado pelo Antfarm)</li>
+        <li><strong>Health Monitor</strong> — verifica canais a cada 5 min, auto-restart até 10x/hora</li>
+      </ul>
+      <pre>Protocolo WebSocket:
+1. Gateway envia: connect.challenge (nonce + timestamp)
+2. Cliente envia: connect (role, scope, assinatura Ed25519)
+3. Gateway responde: hello-ok (protocol, policies, tick 15s)
+
+Frame types:
+  req  → client para server (method + params)
+  res  → server para client (payload | error)
+  event → push assíncrono (agent, presence, health)
+
+Bind modes: loopback | lan | tailnet | auto | custom
+Auth modes: token | password | trusted-proxy | none</pre>
+      <p><strong>O LLM NÃO interage com o gateway.</strong> O gateway chama o LLM via API HTTP. O LLM não sabe que o gateway existe.</p>
+    </div>
+
+    <div class="detail" id="oc-agents">
+      <h3>🤖 Agentes <span class="owner oc">OPENCLAW</span></h3>
+      <p>Cada agente = contexto de execução <strong>100% isolado</strong>: workspace próprio, auth própria, sessions próprias, tool permissions próprias.</p>
+      <div class="sep"></div>
+      <p><strong>Soul-Based System — arquivos que definem o agente:</strong></p>
+      <pre>workspace/
+├── AGENTS.md      # Regras operacionais (alta prioridade no prompt)
+├── SOUL.md        # Personalidade, tom, idioma
+├── IDENTITY.md    # Nome, emoji, avatar
+├── USER.md        # Perfil do humano (nome, timezone)
+├── TOOLS.md       # Notas sobre tools locais
+├── MEMORY.md      # Memória curada de longo prazo
+├── HEARTBEAT.md   # Tarefas periódicas (cron-like leve)
+└── BOOTSTRAP.md   # Guia inicial (1x, auto-deleta)</pre>
+      <p><strong>Composição do system prompt:</strong></p>
+      <pre>PI Core (base) → AGENTS.md → SOUL.md → Skills → Memory → Tool defs
+
+O OpenClaw monta tudo isso como um prompt gigante
+e envia ao LLM. O LLM "é" o agente porque leu
+essas instruções — mas se trocar o SOUL.md,
+a personalidade muda, mesmo com o mesmo LLM.</pre>
+      <p><strong>Routing de mensagens</strong> (quem responde):</p>
+      <ul>
+        <li>1. Peer match exato (DM/grupo/canal ID)</li>
+        <li>2. Guild + role (Discord)</li>
+        <li>3. Channel wildcard</li>
+        <li>4. <strong>Default agent (fallback)</strong> — recebe tudo que não tem match</li>
+      </ul>
+      <p><strong>Multi-agent:</strong> vários agentes no mesmo gateway. Cada um responde por routing bindings. Isolamento total — um não vê as sessions do outro.</p>
+    </div>
+
+    <div class="detail" id="oc-react">
+      <h3>🔄 ReAct Loop <span class="owner both">OPENCLAW orquestra → LLM raciocina</span></h3>
+      <p>O loop principal de execução do agente. O LLM raciocina, chama tools, observa resultados, repete.</p>
+      <div class="sep"></div>
+      <pre>
+┌──────────────────────────────────────────────┐
+│                 ReAct Loop                    │
+│                                              │
+│   ┌──────────┐    ┌──────────┐    ┌────────┐│
+│   │ 💭 REASON │───→│ ⚡ ACT    │───→│ 👀 OBS ││
+│   │  (LLM)   │    │ (tool)   │    │(result)││
+│   └────▲─────┘    └──────────┘    └───┬────┘│
+│        │                              │      │
+│        └──────────────────────────────┘      │
+│              repete até concluir             │
+└──────────────────────────────────────────────┘
+
+Quem faz o quê:
+  REASON  → LLM decide o que fazer (inferência)
+  ACT     → OpenClaw intercepta tool call, executa no host
+  OBSERVE → OpenClaw devolve resultado ao LLM
+  REPEAT  → OpenClaw verifica se LLM quer outra tool call
+
+O OpenClaw é o "maestro". O LLM é o "músico".</pre>
+      <p><strong>Exemplo concreto</strong> (youtube-summary):</p>
+      <ul>
+        <li>REASON: "Preciso extrair metadata do vídeo"</li>
+        <li>ACT: <code>exec("yt-dlp --dump-single-json URL")</code></li>
+        <li>OBSERVE: JSON com título, canal, duração, legendas</li>
+        <li>REASON: "Agora preciso baixar legendas em pt-BR"</li>
+        <li>ACT: <code>exec("yt-dlp --write-auto-subs --skip-download...")</code></li>
+        <li>OBSERVE: arquivo .vtt salvo</li>
+        <li>REASON: "Vou ler e sumarizar"</li>
+        <li>ACT: <code>read("/tmp/subs.vtt")</code></li>
+        <li>REASON: "Pronto, vou gerar o resumo em português"</li>
+        <li>→ Resposta final enviada ao usuário</li>
+      </ul>
+    </div>
+
+    <div class="detail" id="oc-tools">
+      <h3>🛠️ Tools (~25 built-in) <span class="owner oc">OPENCLAW</span></h3>
+      <p>Capacidades que o agente pode usar. O OpenClaw intercepta tool calls do LLM e executa no host. O LLM <strong>pede</strong>, o OpenClaw <strong>faz</strong>.</p>
+      <div class="sep"></div>
+      <pre>
+Shell:      bash, exec
+Filesystem: read, write, edit, apply_patch
+Browser:    browser_* (Playwright/Chrome CDP)
+Web:        web_search (Brave), web_fetch
+Media:      image, tts
+Control:    gateway, cron, message
+Sessions:   sessions_list, sessions_send, sessions_history, sessions_spawn
+Memory:     memory_search
+Outros:     nodes, canvas, elevated</pre>
+      <p><strong>Tool Permissions (narrowing — só restringe, nunca expande):</strong></p>
+      <pre>Tool Profile → Global Policy → Agent Policy → Sandbox Policy
+
+Cada camada pode REMOVER acesso, nunca adicionar.
+
+Profiles:
+  coding       → ler, escrever, executar
+  analysis     → ler, explorar (não escreve)
+  verification → ler, executar (não escreve)
+  messaging    → set restrito para assistentes</pre>
+      <p><strong>O LLM vê:</strong> uma lista de tools disponíveis no prompt. Ele "chama" uma tool gerando JSON com name + args. O OpenClaw intercepta, executa, e devolve o resultado como a próxima mensagem.</p>
+    </div>
+
+    <div class="detail" id="oc-skills">
+      <h3>📋 Skills <span class="owner oc">OPENCLAW</span></h3>
+      <p>SKILL.md = runbooks em Markdown. <strong>Não são plugins executáveis.</strong> São instruções que ensinam o LLM a orquestrar tools para uma tarefa.</p>
+      <div class="sep"></div>
+      <pre>Precedência (alta → baixa):
+1. Workspace: &lt;workspace&gt;/skills/     (maior)
+2. Managed:   ~/.openclaw/skills/      (onde Antfarm cria)
+3. Bundled:   dentro do pacote OpenClaw
+4. Extra:     via skills.load.extraDirs</pre>
+      <p><strong>Lazy-loading:</strong> O prompt inclui apenas um <strong>registry compacto</strong> (nome + descrição). O SKILL.md completo só é lido quando o LLM decide usar a skill (via tool <code>read</code>).</p>
+      <p><strong>Formato SKILL.md:</strong></p>
+      <pre>---
+name: youtube-summary
+description: Resumo de vídeos YouTube
+user-invocable: true
+metadata: {"openclaw":{"emoji":"▶️","os":["linux"]}}
+---
+## What it does
+## Inputs needed
+## Workflow (passos numerados)
+## Output format
+## Guardrails
+## Failure handling</pre>
+      <p><strong>Token impact:</strong> ~24 tokens por skill no registry. Skills com <code>always: true</code> são sempre injetadas.</p>
+    </div>
+
+    <div class="detail" id="oc-cron">
+      <h3>⏱️ Cron Engine <span class="owner oc">OPENCLAW</span></h3>
+      <p>Agendador de jobs built-in no gateway. Dispara sessões de agente em schedule. O Antfarm usa isso como infraestrutura para polling.</p>
+      <div class="sep"></div>
+      <pre>openclaw cron add --name "job" --agent &lt;id&gt; \
+  --every 5m --session isolated \
+  --timeout-seconds 600 --message "prompt"
+
+openclaw cron list          # Ver jobs ativos
+openclaw cron delete --id X # Remover job
+openclaw cron run --id X    # Forçar execução</pre>
+      <p><strong>Como funciona:</strong></p>
+      <ul>
+        <li>Jobs armazenados em <code>~/.openclaw/cron/jobs.json</code></li>
+        <li>Gateway scheduler verifica a cada minuto</li>
+        <li>Quando dispara: spawna sessão isolada do agente com o prompt do job</li>
+        <li>Sessão roda, completa, e termina</li>
+        <li><code>--session isolated</code> = sessão descartável (sem histórico)</li>
+      </ul>
+      <p><strong>O LLM não sabe que crons existem</strong> — ele só recebe uma sessão nova com um prompt. Não sabe se veio de cron, WhatsApp ou CLI.</p>
+    </div>
+
+    <div class="detail" id="oc-sessions">
+      <h3>📼 Sessions <span class="owner oc">OPENCLAW</span></h3>
+      <p>Histórico de conversa persistido em disco. JSONL append-only. O OpenClaw carrega no prompt para dar continuidade. O LLM é stateless — <strong>sessions são a "memória de curto prazo"</strong>.</p>
+      <div class="sep"></div>
+      <pre>Formato: ~/.openclaw/agents/&lt;id&gt;/sessions/&lt;key&gt;.jsonl
+
+Session keys (encode security boundaries):
+  agent:main:main                    → sessão principal
+  agent:main:dm:whatsapp:+5561...    → DM WhatsApp
+  agent:main:group:discord:123       → grupo Discord
+
+Cada linha JSONL = um turno:
+  user message | agent thought | tool call | tool result | response
+
+dmScope (isolamento):
+  main              → todos DMs na mesma sessão
+  per-peer          → isolado por sender
+  per-channel-peer  → isolado por canal + sender (recomendado)</pre>
+      <p><strong>Maintenance:</strong></p>
+      <ul>
+        <li><strong>Reset:</strong> <code>daily</code> (reset às 4h), <code>idle</code> (após N min), <code>manual</code></li>
+        <li><strong>Pruning:</strong> remove tool results antigos in-memory (não altera disco)</li>
+        <li><strong>Rotation:</strong> <code>rotateBytes: "10mb"</code> — arquivo novo quando grande</li>
+        <li><strong>Retention:</strong> <code>pruneAfter: "7d"</code> — remove sessions velhas</li>
+      </ul>
+    </div>
+
+    <div class="detail" id="oc-memory">
+      <h3>🧠 Memory System <span class="owner oc">OPENCLAW</span></h3>
+      <p>O LLM é stateless. <strong>Toda</strong> memória persistente é gerenciada pelo OpenClaw. 4 camadas, da mais efêmera à mais permanente.</p>
+      <div class="sep"></div>
+      <pre>
+CAMADA 4 — Git History (permanente)
+┌─────────────────────────────────────────┐
+│ Versionamento do workspace (.git/)      │
+│ Tudo que é escrito em arquivo tem       │
+│ histórico. Nunca perde.                 │
+│ Dono: OpenClaw                          │
+└─────────────────────────────────────────┘
+
+CAMADA 3 — MEMORY.md (longo prazo curada)
+┌─────────────────────────────────────────┐
+│ Arquivo Markdown no workspace           │
+│ O agente escreve o que quer lembrar     │
+│ Carregado apenas na sessão principal    │
+│ NÃO carregado em grupo/DM sandboxed    │
+│ Dono: OpenClaw (persiste e carrega)     │
+│ Quem escreve: LLM (via tool write)     │
+└─────────────────────────────────────────┘
+
+CAMADA 2 — Notas Diárias (médio prazo)
+┌─────────────────────────────────────────┐
+│ memory/YYYY-MM-DD.md                    │
+│ Auto-load: hoje + ontem no início       │
+│ Acessíveis via memory_search            │
+│ Dono: OpenClaw                          │
+└─────────────────────────────────────────┘
+
+CAMADA 1 — Session Transcript (curto prazo)
+┌─────────────────────────────────────────┐
+│ sessions/*.jsonl                        │
+│ Carregado inteiro no prompt             │
+│ Compactado quando contexto enche        │
+│ Dono: OpenClaw                          │
+└─────────────────────────────────────────┘</pre>
+
+      <p><strong>Vector Embeddings (busca semântica):</strong></p>
+      <pre>DB: ~/.openclaw/memory/&lt;agentId&gt;.sqlite
+
+Geração: OpenClaw envia texto → LLM provider retorna vetor
+         (cascata: local → OpenAI → Gemini → disabled)
+Indexação: file watcher com 1.5s debounce (auto-reindex)
+
+Busca Híbrida (2 algoritmos):
+  BM25 (keyword)   → match textual exato
+  Vector (semântico) → match por significado
+  Post-processing:
+    - MMR diversity re-ranking
+    - Temporal decay (recentes pesam mais)</pre>
+
+      <p><strong>Ciclo de Vida:</strong></p>
+      <pre>1. CRIAÇÃO    → LLM chama write("MEMORY.md", ...)
+2. PERSISTÊNCIA → OpenClaw grava no disco
+3. INDEXAÇÃO   → File watcher → embeddings → SQLite
+4. RETRIEVAL   → Auto-load (MEMORY.md + hoje/ontem)
+                  ou memory_search (vector + BM25)
+5. INJEÇÃO     → OpenClaw coloca no prompt do LLM
+6. USO         → LLM "lê" como se soubesse
+
+O LLM NÃO "lembra". Ele "lê" o que o OpenClaw colocou.
+Se não foi escrito em arquivo, está perdido.</pre>
+    </div>
+
+    <div class="detail" id="oc-compaction">
+      <h3>🗜️ Compaction <span class="owner both">OPENCLAW orquestra → LLM sumariza</span></h3>
+      <p>Quando o contexto enche, OpenClaw sumariza a conversa antiga para liberar espaço. Permite conversas infinitas.</p>
+      <div class="sep"></div>
+      <pre>PASSO A PASSO:
+
+1. DETECÇÃO (OpenClaw)
+   Tokens se aproximam do limite do modelo
+   Ex: 120k de 128k usados
+
+2. MEMORY FLUSH (OpenClaw → LLM) — turno invisível
+   OpenClaw: "Antes de compactar, salve notas
+   importantes em MEMORY.md"
+   LLM escreve o que acha relevante (NO_REPLY)
+   Isso preserva info crítica antes de sumarizar
+
+3. SUMARIZAÇÃO (OpenClaw → LLM)
+   OpenClaw: "Sumarize esta conversa preservando
+   informações críticas e identificadores"
+   LLM gera resumo compacto
+
+4. SUBSTITUIÇÃO (OpenClaw)
+   Histórico antigo → substituído pelo sumário
+   Marker de compaction gravado no JSONL
+   Contexto volta a ter espaço (~70% liberado)
+
+5. CONTINUAÇÃO
+   Próxima mensagem: [sumário] + [msgs recentes]
+   Continuidade semântica mantida
+   O LLM NÃO sabe que foi compactado
+
+identifierPolicy:
+  "strict"  → preserva IDs opacos no sumário (default)
+  "off"     → não preserva
+  "custom"  → instruções customizadas</pre>
+    </div>
+
+    <div class="lyr-note">↓ monta prompt e envia via API HTTP ↓</div>
+  </div>
+
+  <!-- BOUNDARY -->
+  <div class="bnd">⚡ FRONTEIRA API — OpenClaw faz chamada HTTP/streaming ao LLM provider. O LLM não sabe que o OpenClaw existe.</div>
+
+  <!-- LLM -->
+  <div class="lyr llm">
+    <span class="lyr-tag">🧠 LLM Provider — O Modelo de IA (OpenAI / Anthropic / ...)</span>
+    <div class="chips" style="margin-top:.5rem">
+      <div class="chip llm" onclick="toggle('llm-model')">Modelo (GPT/Claude)</div>
+      <div class="chip llm" onclick="toggle('llm-inference')">Inferência</div>
+      <div class="chip llm" onclick="toggle('llm-toolcalls')">Tool Calls</div>
+      <div class="chip llm" onclick="toggle('llm-context')">Context Window</div>
+    </div>
+
+    <div class="detail" id="llm-model">
+      <h3>🤖 Modelo <span class="owner llm">LLM PROVIDER</span></h3>
+      <p>O "cérebro". O único componente que <strong>não é do OpenClaw</strong>. Pode ser trocado a qualquer momento — a plataforma é agnóstica.</p>
+      <div class="sep"></div>
+      <p><strong>Providers suportados (20+):</strong></p>
+      <ul>
+        <li><strong>OpenAI:</strong> GPT-5.4, GPT-5.4-codex (via ChatGPT subscription OAuth)</li>
+        <li><strong>Anthropic:</strong> Claude Opus, Sonnet, Haiku</li>
+        <li><strong>Google:</strong> Gemini Pro, Ultra</li>
+        <li><strong>Mistral:</strong> Large, Medium</li>
+        <li><strong>Local:</strong> Ollama, vLLM, sglang</li>
+        <li><strong>Proxy:</strong> OpenRouter, LiteLLM, AI Gateway</li>
+      </ul>
+      <p><strong>Fallback:</strong> Se o primary falhar, OpenClaw tenta o próximo da lista automaticamente.</p>
+      <p><strong>O modelo NÃO sabe:</strong> que é um "agente", que existe WhatsApp, que tem ferramentas reais, que tem memória persistente. Ele só vê um prompt enorme e responde.</p>
+    </div>
+
+    <div class="detail" id="llm-inference">
+      <h3>⚡ Inferência <span class="owner llm">LLM PROVIDER</span></h3>
+      <p>O LLM recebe um prompt montado pelo OpenClaw e gera uma resposta. <strong>Stateless</strong> — cada chamada é independente. Não existe "sessão" no LLM.</p>
+      <div class="sep"></div>
+      <pre>Chamada típica (simplificada):
+
+POST https://api.openai.com/v1/chat/completions
+{
+  "model": "gpt-5.4",
+  "messages": [
+    {"role": "system", "content": "[PROMPT GIGANTE DO OPENCLAW]"},
+    {"role": "user", "content": "Resuma este vídeo..."},
+    {"role": "assistant", "content": "Vou executar yt-dlp...",
+     "tool_calls": [{"function":{"name":"exec","arguments":"..."}}]},
+    {"role": "tool", "content": "[resultado do exec]"},
+    ...
+  ],
+  "tools": [...lista de tools...],
+  "stream": true
+}</pre>
+      <p><strong>O OpenClaw constrói TODA a lista de messages.</strong> O LLM só processa e responde. Não gerencia estado.</p>
+    </div>
+
+    <div class="detail" id="llm-toolcalls">
+      <h3>🔧 Tool Calls <span class="owner both">LLM decide → OPENCLAW executa</span></h3>
+      <p>O LLM pode "pedir" para executar uma ferramenta. Ele gera um JSON com nome + argumentos. O OpenClaw intercepta, executa no host, e devolve o resultado.</p>
+      <div class="sep"></div>
+      <pre>1. LLM gera na resposta:
+   {"tool_calls": [{
+     "function": {
+       "name": "exec",
+       "arguments": "{\"command\": \"free -h\"}"
+     }
+   }]}
+
+2. OpenClaw intercepta (NÃO vai pro usuário)
+3. OpenClaw verifica permissões (tool policy)
+4. OpenClaw executa no host: free -h
+5. OpenClaw devolve resultado ao LLM como nova mensagem:
+   {"role": "tool", "content": "total: 7.8Gi  used: 1.1Gi..."}
+
+6. LLM continua raciocinando com o resultado
+
+O LLM NÃO executa nada. Ele só diz "quero rodar X".
+O OpenClaw decide se pode e executa.</pre>
+    </div>
+
+    <div class="detail" id="llm-context">
+      <h3>📦 Context Window <span class="owner both">OPENCLAW monta → LLM processa</span></h3>
+      <p>Tudo que o LLM "vê" a cada chamada. 100% montado pelo OpenClaw. O LLM não escolhe o que entra.</p>
+      <div class="sep"></div>
+      <pre>┌─────────────────────────────────────────────┐
+│           CONTEXT WINDOW DO LLM             │
+│                                             │
+│  ┌── System Prompt (OpenClaw) ─────────────┐│
+│  │  • Tool definitions (~25 tools)         ││
+│  │  • Skills registry (nome+desc only)     ││
+│  │  • Runtime metadata (host, OS, hora)    ││
+│  │  • AGENTS.md (regras operacionais)      ││
+│  │  • SOUL.md (personalidade)              ││
+│  │  • MEMORY.md (memória curada)           ││
+│  │  • Notas de hoje + ontem                ││
+│  └─────────────────────────────────────────┘│
+│                                             │
+│  ┌── Histórico de conversa ────────────────┐│
+│  │  user → assistant → tool → result → ... ││
+│  │  (ou sumário pós-compaction)            ││
+│  └─────────────────────────────────────────┘│
+│                                             │
+│  ┌── Mensagem atual ───────────────────────┐│
+│  │  "Resuma este vídeo: https://..."       ││
+│  └─────────────────────────────────────────┘│
+│                                             │
+│  Bootstrap cap: 150k chars total            │
+│  Per-file limit: 20k chars                  │
+└─────────────────────────────────────────────┘
+
+O QUE O LLM NÃO VÊ:
+  ❌ Qual canal (WhatsApp, Telegram...)
+  ❌ Outros agentes no gateway
+  ❌ Cron jobs em background
+  ❌ Sessions de outros usuários
+  ❌ Memória não injetada no prompt
+  ❌ Conversas anteriores (se não estão no histórico)
+  ❌ O Antfarm ou seus workflows
+  ❌ OAuth tokens, API keys, credentials</pre>
+    </div>
+
+    <div class="lyr-note" style="color:var(--llm)">O LLM é stateless. NÃO tem memória. Tudo vem do prompt montado pelo OpenClaw.</div>
+  </div>
+
+  <!-- CHANNELS -->
+  <div class="lyr ch" style="margin-top:1rem;border-radius:var(--r)">
+    <span class="lyr-tag">📱 Channels — 100% OpenClaw</span>
+    <div class="chips" style="margin-top:.5rem">
+      <div class="chip ch" onclick="toggle('ch-wa')">WhatsApp</div>
+      <div class="chip ch" onclick="toggle('ch-tg')">Telegram</div>
+      <div class="chip ch" onclick="toggle('ch-all')">40+ canais</div>
+    </div>
+
+    <div class="detail" id="ch-wa">
+      <h3>💬 WhatsApp <span class="owner oc">OPENCLAW</span></h3>
+      <p>Via Baileys (implementação WhatsApp Web em Node.js). Single-device por host — apenas 1 gateway por conta.</p>
+      <div class="sep"></div>
+      <ul>
+        <li><strong>Pairing:</strong> QR code ou pairing code (<code>openclaw channels login --channel whatsapp</code>)</li>
+        <li><strong>DM Policy:</strong> <code>pairing</code> (default) — desconhecidos recebem código de 6 dígitos, expira em 1h</li>
+        <li><strong>Grupo:</strong> <code>requireMention: true</code> — só responde se mencionado</li>
+        <li><strong>Media:</strong> até 50MB (<code>mediaMaxMb</code>)</li>
+        <li><strong>Health:</strong> auto-restart se desconectar (até 10x/hora)</li>
+      </ul>
+      <p><strong>O LLM não sabe que WhatsApp existe.</strong> Ele recebe uma mensagem formatada pelo OpenClaw: <code>[WhatsApp +5561... 16:01 UTC] Resuma este vídeo...</code></p>
+    </div>
+
+    <div class="detail" id="ch-tg">
+      <h3>✈️ Telegram <span class="owner oc">OPENCLAW</span></h3>
+      <p>Via grammY framework. Bot token. Suporta grupos com mention patterns customizáveis.</p>
+      <div class="sep"></div>
+      <ul>
+        <li><strong>Auth:</strong> Bot token (<code>TELEGRAM_BOT_TOKEN</code>)</li>
+        <li><strong>Grupos:</strong> mention patterns: <code>["@bot", "bot"]</code></li>
+        <li><strong>Inline:</strong> suporta inline queries e callbacks</li>
+      </ul>
+    </div>
+
+    <div class="detail" id="ch-all">
+      <h3>🌐 40+ Canais <span class="owner oc">OPENCLAW</span></h3>
+      <p>Cada canal tem adapter próprio, auth específica, e políticas configuráveis. O LLM não sabe qual canal está sendo usado.</p>
+      <div class="sep"></div>
+      <pre>WhatsApp  → Baileys         Signal    → signal-cli
+Telegram  → grammY          iMessage  → imsg (macOS)
+Discord   → discord.js      Matrix    → matrix-js-sdk
+Slack     → Slack SDK        Google Chat → Google API
+MS Teams  → Bot Framework   + muitos outros</pre>
+      <p><strong>Routing:</strong> Cada canal pode ser roteado para um agente diferente via bindings.</p>
+    </div>
+  </div>
+
+  <!-- STORAGE -->
+  <div class="lyr st" style="margin-top:1rem;border-radius:var(--r)">
+    <span class="lyr-tag">💾 Storage — 100% OpenClaw (disco local)</span>
+    <div class="chips" style="margin-top:.5rem">
+      <div class="chip st" onclick="toggle('st-config')">openclaw.json</div>
+      <div class="chip st" onclick="toggle('st-dirs')">Diretórios</div>
+      <div class="chip st" onclick="toggle('st-creds')">Credentials</div>
+    </div>
+
+    <div class="detail" id="st-config">
+      <h3>⚙️ openclaw.json <span class="owner oc">OPENCLAW</span></h3>
+      <p>Configuração principal. JSON5 (suporta comentários). Hot-reload — mudanças seguras aplicadas sem restart.</p>
+      <div class="sep"></div>
+      <pre>Root-level keys:
+  agents    → defaults, lista, model, workspace, concurrency
+  channels  → WhatsApp, Telegram, Discord, Slack...
+  gateway   → port, bind, auth, reload
+  session   → dmScope, reset, pruning, maintenance
+  cron      → jobs, retention, concurrency
+  tools     → permissions, exec, fs, elevated, sandbox
+  skills    → entries, load, extra dirs
+  browser   → headless, SSRF policy
+  env       → vars, secrets, shell env
+
+Hot-reload modes:
+  hybrid  → hot-apply seguras, restart para críticas (default)
+  hot     → apenas seguras
+  restart → restart para tudo
+  off     → manual</pre>
+    </div>
+
+    <div class="detail" id="st-dirs">
+      <h3>📁 Diretórios <span class="owner oc">OPENCLAW</span></h3>
+      <pre>~/.openclaw/
+├── openclaw.json                  # Config principal
+├── agents/&lt;id&gt;/agent/             # Auth por agente
+│   ├── auth-profiles.json         # OAuth tokens
+│   └── models.json                # Model overrides
+├── workspace/                     # Workspace main (git repo)
+│   ├── AGENTS.md / SOUL.md / ...  # Soul-based files
+│   ├── memory/                    # Notas diárias
+│   └── skills/                    # Skills (maior precedência)
+├── workspaces/                    # Workspaces adicionais
+├── skills/                        # Skills gerenciadas
+├── memory/&lt;id&gt;.sqlite             # Vector embeddings
+├── cron/jobs.json                 # Cron jobs
+├── credentials/                   # Secrets (0600)
+├── browser/                       # Perfil Chrome
+├── identity/device.json           # Ed25519 keypair
+├── antfarm/antfarm.db             # ← ANTFARM (separado!)
+└── logs/ media/ devices/          # Auxiliares</pre>
+    </div>
+
+    <div class="detail" id="st-creds">
+      <h3>🔐 Credentials <span class="owner oc">OPENCLAW</span></h3>
+      <p>OAuth tokens, API keys, secrets. Permissão 0600. Nunca compartilhar entre agentes.</p>
+      <div class="sep"></div>
+      <ul>
+        <li><strong>auth-profiles.json:</strong> <code>{ access, refresh, expires, accountId }</code></li>
+        <li><strong>OAuth auto-refresh:</strong> quando access expira, usa refresh_token (sob file lock)</li>
+        <li><strong>Se refresh falhar:</strong> <code>openclaw models auth login --provider openai-codex</code> (TTY interativo)</li>
+        <li><strong>Secret refs:</strong> <code>{"source":"env","id":"VAR"}</code> ou <code>{"source":"file","id":"/path"}</code></li>
+      </ul>
+      <p><strong>O LLM nunca vê credentials.</strong> O OpenClaw injeta auth nos headers da API call. Secrets são redacted nos logs.</p>
+    </div>
+  </div>
+
+</div><!-- /stack -->
+
+</div><!-- /wrap -->
+
+<script>
+function toggle(id) {
+  const el = document.getElementById(id);
+  const wasOpen = el.classList.contains('open');
+  // Close all in same layer
+  el.closest('.lyr').querySelectorAll('.detail').forEach(d => d.classList.remove('open'));
+  el.closest('.lyr').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  if (!wasOpen) {
+    el.classList.add('open');
+    // Find the chip that triggered this
+    el.closest('.lyr').querySelectorAll('.chip').forEach(c => {
+      if (c.getAttribute('onclick')?.includes(id)) c.classList.add('active');
+    });
+    // Smooth scroll to detail
+    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+  }
+}
+</script>
+</body>
+</html>
